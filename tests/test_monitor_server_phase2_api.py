@@ -274,7 +274,10 @@ class MonitorServerPhase2APITests(unittest.TestCase):
         media_path = media_dir / "chapter.m4a"
         payload = b"0123456789abcdef"
         media_path.write_bytes(payload)
+        aac_path = media_dir / "chunk-001.aac"
+        aac_path.write_bytes(b"aac")
         rel = quote(str(media_path.relative_to(self.root)))
+        aac_rel = quote(str(aac_path.relative_to(self.root)))
 
         head_req = urllib.request.Request(self._url("/media", {"path": rel}), method="HEAD")
         head_status, head_body, head_headers = self._request(head_req)
@@ -283,6 +286,11 @@ class MonitorServerPhase2APITests(unittest.TestCase):
         self.assertEqual(head_headers.get("Content-Length"), str(len(payload)))
         self.assertEqual(head_headers.get("Content-Type"), "audio/mp4")
         self.assertEqual(head_headers.get("Accept-Ranges"), "bytes")
+
+        aac_head_req = urllib.request.Request(self._url("/media", {"path": aac_rel}), method="HEAD")
+        aac_head_status, _, aac_head_headers = self._request(aac_head_req)
+        self.assertEqual(aac_head_status, 200)
+        self.assertEqual(aac_head_headers.get("Content-Type"), "audio/aac")
 
         range_req = urllib.request.Request(
             self._url("/media", {"path": rel}),

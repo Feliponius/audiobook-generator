@@ -131,6 +131,10 @@ python epub_to_audiobook.py book.epub \
     --rewrite-policy script-only
 ```
 
+LLM rewriting is opt-in from the CLI. Use `--rewrite-policy selective` or
+`--rewrite-policy full` only after installing and configuring the matching
+rewrite backend.
+
 ### Chunking
 
 Text is split into chunks for TTS:
@@ -141,7 +145,7 @@ Text is split into chunks for TTS:
 ### Output Formats
 
 - **M4A/AAC** — Primary listening format (128kbps)
-- **HLS** — For live streaming during generation
+- **HLS** — ADTS AAC segments for live streaming during generation
 - **WAV** — Intermediate format (cleaned up automatically)
 
 ## Deployment

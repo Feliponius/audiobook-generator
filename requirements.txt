@@ -8,3 +8,6 @@ numpy>=1.24.0
 
 # For HLS streaming support (optional but recommended)
 # ffmpeg must be installed separately via system package manager
+
+# Optional local LLM rewrite backend:
+# llama-cpp-python

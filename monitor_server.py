@@ -7,7 +7,6 @@ Pipeline execution still delegates to ``epub_to_audiobook.py``.
 from __future__ import annotations
 
 import argparse
-import cgi
 import json
 import os
 import re
@@ -89,6 +88,68 @@ def _safe_rmtree(path: Path) -> None:
             shutil.rmtree(path, ignore_errors=True)
     except OSError:
         pass
+
+
+def _multipart_boundary(content_type: str) -> bytes | None:
+    match = re.search(r'(?:^|;)\s*boundary=(?:"([^"]+)"|([^;]+))', content_type)
+    if not match:
+        return None
+    boundary = (match.group(1) or match.group(2) or "").strip()
+    return boundary.encode("utf-8") if boundary else None
+
+
+def _parse_content_disposition(value: str) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for part in value.split(";"):
+        part = part.strip()
+        if "=" not in part:
+            continue
+        key, raw = part.split("=", 1)
+        raw = raw.strip()
+        if len(raw) >= 2 and raw[0] == raw[-1] == '"':
+            raw = raw[1:-1]
+        out[key.strip().lower()] = raw
+    return out
+
+
+def parse_multipart_file_upload(body: bytes, content_type: str, field_name: str = "file") -> tuple[str, bytes] | None:
+    """Return (filename, data) for a simple multipart file field."""
+    boundary = _multipart_boundary(content_type)
+    if not boundary:
+        return None
+    delimiter = b"--" + boundary
+    for raw_part in body.split(delimiter):
+        part = raw_part
+        if part.startswith(b"\r\n"):
+            part = part[2:]
+        elif part.startswith(b"\n"):
+            part = part[1:]
+        if not part or part == b"--":
+            continue
+        if part.endswith(b"--"):
+            part = part[:-2].rstrip(b"\r\n")
+        elif part.endswith(b"\r\n"):
+            part = part[:-2]
+        elif part.endswith(b"\n"):
+            part = part[:-1]
+        if b"\r\n\r\n" in part:
+            header_blob, data = part.split(b"\r\n\r\n", 1)
+        elif b"\n\n" in part:
+            header_blob, data = part.split(b"\n\n", 1)
+        else:
+            continue
+        headers: dict[str, str] = {}
+        for line in header_blob.decode("utf-8", errors="replace").splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            headers[key.strip().lower()] = value.strip()
+        disposition = _parse_content_disposition(headers.get("content-disposition", ""))
+        if disposition.get("name") != field_name:
+            continue
+        filename = disposition.get("filename", "")
+        return filename, data
+    return None
 
 
 def matching_library_run_processes(active_processes: list[dict], run_dir: Path | None, outdir: Path | None) -> list[dict]:
@@ -1132,6 +1193,8 @@ class Handler(BaseHTTPRequestHandler):
             return "audio/mpeg"
         if path.suffix == ".m4a":
             return "audio/mp4"
+        if path.suffix == ".aac":
+            return "audio/aac"
         if path.suffix == ".m3u8":
             return "application/vnd.apple.mpegurl"
         if path.suffix == ".epub":
@@ -1406,21 +1469,17 @@ class Handler(BaseHTTPRequestHandler):
             if clen <= 0 or clen > max_upload:
                 self._send_json({"error": "invalid content length"}, status=400)
                 return
-            environ = {
-                "REQUEST_METHOD": "POST",
-                "CONTENT_TYPE": self.headers.get("Content-Type", ""),
-                "CONTENT_LENGTH": str(clen),
-            }
-            form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ=environ)
-            if "file" not in form:
+            upload = parse_multipart_file_upload(
+                self.rfile.read(clen),
+                self.headers.get("Content-Type", ""),
+            )
+            if not upload:
                 self._send_json({"error": "expected file field"}, status=400)
                 return
-            item = form["file"]
-            raw_name = getattr(item, "filename", None) or ""
+            raw_name, file_data = upload
             if not raw_name.lower().endswith(".epub"):
                 self._send_json({"error": "only .epub uploads are supported"}, status=400)
                 return
-            file_data = item.file.read() if item.file else b""
             if not file_data:
                 self._send_json({"error": "empty file"}, status=400)
                 return
