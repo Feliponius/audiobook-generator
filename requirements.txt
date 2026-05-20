@@ -1,0 +1,10 @@
+# Core dependencies
+kokoro>=0.9.4
+piper-tts>=1.4.2
+ebooklib>=0.20
+beautifulsoup4>=4.14.3
+lxml>=4.9.0
+numpy>=1.24.0
+
+# For HLS streaming support (optional but recommended)
+# ffmpeg must be installed separately via system package manager
