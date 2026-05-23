@@ -673,6 +673,73 @@
     }
     .reader-sheet-list button:active { background: rgba(255, 255, 255, 0.06); }
 
+    #bookChatScreen .book-chat-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    #bookChatQuestion {
+      width: 100%;
+      min-height: 88px;
+      resize: vertical;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 12px 14px;
+    }
+    #bookChatAnswer {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--chip-bg);
+      padding: 12px 14px;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      min-height: 48px;
+      white-space: pre-wrap;
+    }
+    #bookChatCitations {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .book-chat-citation {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      padding: 10px 12px;
+      font-size: 0.84rem;
+    }
+    .book-chat-citation .chapter {
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 4px;
+      font-size: 0.78rem;
+    }
+    .book-chat-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .book-chat-actions button {
+      font-size: 0.78rem;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--chip-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .book-chat-status {
+      font-size: 0.82rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+
     .bottom-nav {
       position: fixed;
       left: 0;
@@ -1351,6 +1418,7 @@
     </div>
     <div class="cta-stack">
       <button type="button" class="btn-primary" id="btnRead">Read</button>
+      <button type="button" class="btn-secondary" id="btnBookChat">Ask this book</button>
       <button type="button" class="btn-secondary" id="btnStart">Start audiobook</button>
       <button type="button" class="btn-secondary hidden" id="btnStop">Stop generation</button>
       <button type="button" class="btn-secondary hidden" id="btnPause">Pause generation</button>
@@ -1414,6 +1482,30 @@
         <p class="muted">Open a book with a conversion run to see rewrite/TTS progress, events, and raw media links.</p>
       </div>
     </details>
+  </div>
+
+  <div id="bookChatScreen" class="app hidden" data-book-chat-ui="v1">
+    <header class="app-bar">
+      <button type="button" class="icon-btn" id="bookChatBack" aria-label="Back">←</button>
+    </header>
+    <h1 id="bookChatTitle" style="margin:0 0 4px;font-size:1.2rem">Book Chat</h1>
+    <p class="muted" id="bookChatSubtitle" style="margin:0 0 12px;font-size:0.86rem">Ask questions about indexed passages for this book.</p>
+    <div id="bookChatPanel" class="book-chat-panel">
+      <textarea id="bookChatQuestion" placeholder="Ask about this book…" rows="3"></textarea>
+      <button type="button" class="btn-primary" id="bookChatSendBtn" style="width:100%">Send</button>
+      <p class="book-chat-status" id="bookChatStatus" aria-live="polite"></p>
+      <div id="bookChatAnswer" class="muted">Answers appear here after you send a question.</div>
+      <div id="bookChatCitations" aria-label="Citations"></div>
+      <div class="book-chat-actions" id="bookChatQuickActions" aria-label="Learning actions">
+        <button type="button" data-book-chat-action="explain">Explain this another way</button>
+        <button type="button" data-book-chat-action="socratic">Ask me Socratic questions</button>
+        <button type="button" data-book-chat-action="challenge">Challenge my assumptions</button>
+        <button type="button" data-book-chat-action="example">Give me a real-life example</button>
+        <button type="button" data-book-chat-action="practice">Turn this into a practice exercise</button>
+        <button type="button" data-book-chat-action="save" id="bookChatSaveInsight">Save this insight</button>
+      </div>
+      <p class="muted" style="font-size:0.78rem;margin:0">TODO: auto-index EPUB passages on first open; queries use passages already indexed via the API.</p>
+    </div>
   </div>
 
   <div id="nowScreen" class="app hidden">
@@ -1564,6 +1656,7 @@
       books: [],
       filter: 'all',
       currentBookId: null,
+      bookChatLastAnswer: '',
       poll: null,
       rendition: null,
       readerEpubBook: null,
@@ -2175,6 +2268,7 @@
       if (!parts.length || parts[0] === '') return { name: 'library' };
       if (parts[0] === 'book' && parts[1]) return { name: 'book', id: parts[1] };
       if (parts[0] === 'read' && parts[1]) return { name: 'read', id: parts[1] };
+      if (parts[0] === 'bookchat' && parts[1]) return { name: 'bookchat', id: parts[1] };
       if (parts[0] === 'now') return { name: 'now' };
       if (parts[0] === 'settings') return { name: 'settings' };
       return { name: 'library' };
@@ -2184,6 +2278,7 @@
       if (route.name === 'library') location.hash = '#/';
       else if (route.name === 'book') location.hash = '#/book/' + route.id;
       else if (route.name === 'read') location.hash = '#/read/' + route.id;
+      else if (route.name === 'bookchat') location.hash = '#/bookchat/' + route.id;
       else if (route.name === 'now') location.hash = '#/now';
       else if (route.name === 'settings') location.hash = '#/settings';
     }
@@ -2200,8 +2295,130 @@
       if (lightBtn) lightBtn.classList.toggle('active', t === 'light');
     }
 
+    const BOOK_CHAT_QUICK_PREFIX = {
+      explain: 'Explain this another way: ',
+      socratic: 'Ask me Socratic questions about: ',
+      challenge: 'Challenge my assumptions about: ',
+      example: 'Give me a real-life example of: ',
+      practice: 'Turn this into a practice exercise about: ',
+    };
+
+    function renderBookChatCitations(citations) {
+      const box = $('bookChatCitations');
+      box.innerHTML = '';
+      const items = citations || [];
+      if (!items.length) return;
+      for (const c of items) {
+        const card = document.createElement('div');
+        card.className = 'book-chat-citation';
+        const chapter = document.createElement('div');
+        chapter.className = 'chapter';
+        chapter.textContent = c.chapter || 'Passage';
+        const text = document.createElement('div');
+        text.textContent = c.snippet || c.text || '';
+        card.appendChild(chapter);
+        card.appendChild(text);
+        box.appendChild(card);
+      }
+    }
+
+    async function sendBookChatQuery() {
+      const id = state.currentBookId;
+      if (!id) return;
+      const question = ($('bookChatQuestion').value || '').trim();
+      if (!question) {
+        showToast('Enter a question first');
+        return;
+      }
+      const status = $('bookChatStatus');
+      const sendBtn = $('bookChatSendBtn');
+      status.textContent = 'Searching indexed passages…';
+      sendBtn.disabled = true;
+      try {
+        const data = await fetchJson('/api/library/book-chat/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ book_id: id, question }),
+        });
+        state.bookChatLastAnswer = data.answer || '';
+        $('bookChatAnswer').textContent = state.bookChatLastAnswer || 'No answer returned.';
+        renderBookChatCitations(data.citations);
+        status.textContent = data.fallback_used ? 'Answer (retrieval fallback)' : 'Answer ready';
+      } catch (e) {
+        status.textContent = '';
+        $('bookChatAnswer').textContent = 'Could not get an answer. Index passages for this book first.';
+        $('bookChatCitations').innerHTML = '';
+        showToast(e.message || String(e));
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function saveBookChatInsight() {
+      const id = state.currentBookId;
+      if (!id) return;
+      const text = (state.bookChatLastAnswer || '').trim() || ($('bookChatQuestion').value || '').trim();
+      if (!text) {
+        showToast('Nothing to save yet');
+        return;
+      }
+      try {
+        await fetchJson('/api/library/book-chat/memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ book_id: id, text, source: 'insight' }),
+        });
+        showToast('Insight saved');
+      } catch (e) {
+        showToast(e.message || String(e));
+      }
+    }
+
+    function initBookChatQuickActions() {
+      const panel = $('bookChatQuickActions');
+      if (!panel || panel.getAttribute('data-bound') === '1') return;
+      panel.setAttribute('data-bound', '1');
+      panel.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('button[data-book-chat-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-book-chat-action');
+        if (action === 'save') {
+          saveBookChatInsight().catch(e => showToast(e.message || String(e)));
+          return;
+        }
+        const prefix = BOOK_CHAT_QUICK_PREFIX[action];
+        if (!prefix) return;
+        const ta = $('bookChatQuestion');
+        const cur = (ta.value || '').trim();
+        ta.value = prefix + (cur ? cur : '');
+        ta.focus();
+      });
+    }
+
+    async function openBookChatScreen(id) {
+      state.currentBookId = id;
+      state.bookChatLastAnswer = '';
+      $('bookChatQuestion').value = '';
+      $('bookChatAnswer').textContent = 'Answers appear here after you send a question.';
+      $('bookChatCitations').innerHTML = '';
+      $('bookChatStatus').textContent = '';
+      initBookChatQuickActions();
+      let title = 'Book Chat';
+      try {
+        const data = await fetchJson('/api/library/book?id=' + encodeURIComponent(id));
+        if (data.book && data.book.title) title = data.book.title;
+      } catch (_) {}
+      $('bookChatTitle').textContent = title;
+      $('bookChatSubtitle').textContent = 'Ask this book · passage index required';
+      $('bookChatSendBtn').onclick = () => sendBookChatQuery().catch(e => showToast(e.message || String(e)));
+      $('bookChatSaveInsight').onclick = (ev) => {
+        ev.preventDefault();
+        saveBookChatInsight().catch(e => showToast(e.message || String(e)));
+      };
+    }
+
     function syncNavTabs(routeName) {
-      const tabFor = routeName === 'book' || routeName === 'read' ? null : routeName;
+      const tabFor = routeName === 'book' || routeName === 'read' || routeName === 'bookchat' ? null : routeName;
       document.querySelectorAll('.nav-tab').forEach((tab) => {
         tab.classList.toggle('active', tab.getAttribute('data-nav') === tabFor);
       });
@@ -3120,6 +3337,7 @@
       };
 
       $('btnRead').onclick = () => navigate({ name: 'read', id });
+      $('btnBookChat').onclick = () => navigate({ name: 'bookchat', id });
       $('btnStart').onclick = async () => {
         try {
           await fetchJson('/api/library/start', {
@@ -3422,9 +3640,10 @@
       hideReader();
       $('libraryScreen').classList.toggle('hidden', r.name !== 'library');
       $('bookScreen').classList.toggle('hidden', r.name !== 'book');
+      $('bookChatScreen').classList.toggle('hidden', r.name !== 'bookchat');
       $('nowScreen').classList.toggle('hidden', r.name !== 'now');
       $('settingsScreen').classList.toggle('hidden', r.name !== 'settings');
-      $('bottomNav').classList.toggle('hidden', r.name === 'read' || r.name === 'book');
+      $('bottomNav').classList.toggle('hidden', r.name === 'read' || r.name === 'book' || r.name === 'bookchat');
       syncNavTabs(r.name);
       syncPlayerChrome(r.name);
       if (r.name === 'library') {
@@ -3444,6 +3663,8 @@
       } else if (r.name === 'read') {
         state.currentBookId = r.id;
         openReader(r.id).catch(e => showToast(e.message));
+      } else if (r.name === 'bookchat') {
+        openBookChatScreen(r.id).catch(e => showToast(e.message));
       } else if (r.name === 'now') {
         if (!state.books.length) loadLibrary().catch(() => {});
         renderNowScreen().catch(e => showToast(e.message));
@@ -3515,6 +3736,10 @@
       if (state.rendition) selectEpubReadingTheme(state.rendition, next);
     });
     $('bookBack').addEventListener('click', () => navigate({ name: 'library' }));
+    $('bookChatBack').addEventListener('click', () => {
+      if (state.currentBookId) navigate({ name: 'book', id: state.currentBookId });
+      else navigate({ name: 'library' });
+    });
     $('epubInput').addEventListener('change', (ev) => {
       const f = ev.target.files && ev.target.files[0];
       if (!f) return;

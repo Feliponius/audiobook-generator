@@ -1313,6 +1313,23 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/settings":
             self._send_json({"settings": read_app_settings(self.root)})
             return
+        if parsed.path == "/api/library/book-chat/memory":
+            qs = parse_qs(parsed.query)
+            book_id = (qs.get("book_id") or [None])[0]
+            if not book_id or not str(book_id).strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            from book_chat.memory_store import list_memories
+
+            book_id = str(book_id).strip()
+            self._send_json(
+                {
+                    "ok": True,
+                    "book_id": book_id,
+                    "memories": list_memories(self.root, book_id),
+                }
+            )
+            return
         if parsed.path == "/api/run":
             qs = parse_qs(parsed.query)
             run_dir = resolve_run_path(self.root, qs.get("path", [None])[0])
@@ -1971,7 +1988,64 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(payload)
             return
 
+        if parsed.path == "/api/library/book-chat/memory":
+            body = self._read_json_body()
+            if not body:
+                self._send_json({"error": "invalid json"}, status=400)
+                return
+            book_id = body.get("book_id")
+            text = body.get("text")
+            if not isinstance(book_id, str) or not book_id.strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            if not isinstance(text, str) or not text.strip():
+                self._send_json({"error": "missing text"}, status=400)
+                return
+            source = body.get("source") or "user"
+            from book_chat.memory_store import save_memory
+
+            try:
+                record = save_memory(
+                    root,
+                    book_id.strip(),
+                    text,
+                    source=str(source),
+                )
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, status=400)
+                return
+            self._send_json({"ok": True, "memory": record})
+            return
+
         self._send_json({"error": f"unknown POST path: {parsed.path}"}, status=404)
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        parsed = urlparse(self.path)
+        root = self.root
+        if parsed.path == "/api/library/book-chat/memory":
+            qs = parse_qs(parsed.query)
+            book_id = (qs.get("book_id") or [None])[0]
+            memory_id = (qs.get("memory_id") or [None])[0]
+            if not book_id or not str(book_id).strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            if not memory_id or not str(memory_id).strip():
+                self._send_json({"error": "missing memory_id"}, status=400)
+                return
+            from book_chat.memory_store import delete_memory
+
+            deleted = delete_memory(root, str(book_id).strip(), str(memory_id).strip())
+            self._send_json(
+                {
+                    "ok": True,
+                    "book_id": str(book_id).strip(),
+                    "memory_id": str(memory_id).strip(),
+                    "deleted": deleted,
+                },
+                status=200 if deleted else 404,
+            )
+            return
+        self._send_json({"error": f"unknown DELETE path: {parsed.path}"}, status=404)
 
     def log_message(self, format: str, *args) -> None:  # noqa: A003
         return

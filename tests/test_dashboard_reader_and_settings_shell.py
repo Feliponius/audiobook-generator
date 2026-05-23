@@ -106,6 +106,24 @@ class DashboardShellTests(unittest.TestCase):
         self.assertIn("'Resume this audiobook'", html)
         self.assertIn("summary.textContent = 'Ch. ' + (activeChapter ? activeChapter.index : '—')", html)
 
+    def test_book_chat_ui_markers_and_learning_actions(self) -> None:
+        html = DASHBOARD.read_text(encoding="utf-8")
+        self.assertIn('data-book-chat-ui="v1"', html)
+        self.assertIn('id="bookChatPanel"', html)
+        self.assertIn('id="bookChatQuestion"', html)
+        self.assertIn('id="bookChatSendBtn"', html)
+        self.assertIn('id="bookChatCitations"', html)
+        self.assertIn('id="btnBookChat"', html)
+        self.assertIn("Ask this book", html)
+        self.assertIn("Explain this another way", html)
+        self.assertIn("Ask me Socratic questions", html)
+        self.assertIn("Challenge my assumptions", html)
+        self.assertIn("Give me a real-life example", html)
+        self.assertIn("Turn this into a practice exercise", html)
+        self.assertIn("Save this insight", html)
+        self.assertIn("/api/library/book-chat/query", html)
+        self.assertIn("/api/library/book-chat/memory", html)
+
     def test_audiobook_chapter_labels_use_api_one_based_index(self) -> None:
         """run.chapters[].index is already 1-based; do not add 1 for display or mini-player hints."""
         html = DASHBOARD.read_text(encoding="utf-8")

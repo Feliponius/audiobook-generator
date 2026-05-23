@@ -73,6 +73,24 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read().decode("utf-8"))
 
+    def _get_json(self, path: str) -> tuple[int, Any]:
+        req = urllib.request.Request(self._url(path), method="GET")
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status, json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode("utf-8"))
+
+    def _delete(self, path: str) -> tuple[int, Any]:
+        req = urllib.request.Request(self._url(path), method="DELETE")
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                body = resp.read().decode("utf-8")
+                return resp.status, json.loads(body) if body.strip() else {}
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode("utf-8")
+            return e.code, json.loads(raw) if raw.strip() else {}
+
     def test_book_chat_index_and_query(self) -> None:
         book_id = "test-book-001"
         st_idx, idx = self._post_json(
@@ -113,6 +131,46 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
 
     def test_book_chat_index_requires_book_id_and_passages(self) -> None:
         st, body = self._post_json("/api/library/book-chat/index", {})
+        self.assertEqual(st, 400)
+        self.assertIn("error", body)
+
+    def test_book_chat_memory_crud(self) -> None:
+        book_id = "mem-book-001"
+        st_get0, body0 = self._get_json(f"/api/library/book-chat/memory?book_id={book_id}")
+        self.assertEqual(st_get0, 200)
+        self.assertTrue(body0.get("ok"))
+        self.assertEqual(body0.get("book_id"), book_id)
+        self.assertEqual(body0.get("memories"), [])
+
+        st_post, saved = self._post_json(
+            "/api/library/book-chat/memory",
+            {"book_id": book_id, "text": "Small habits matter.", "source": "insight"},
+        )
+        self.assertEqual(st_post, 200)
+        self.assertTrue(saved.get("ok"))
+        memory = saved.get("memory") or {}
+        self.assertEqual(memory.get("book_id"), book_id)
+        self.assertEqual(memory.get("text"), "Small habits matter.")
+        self.assertEqual(memory.get("source"), "insight")
+        memory_id = memory.get("memory_id")
+        self.assertTrue(memory_id)
+
+        st_get1, body1 = self._get_json(f"/api/library/book-chat/memory?book_id={book_id}")
+        self.assertEqual(st_get1, 200)
+        self.assertEqual(len(body1.get("memories") or []), 1)
+        self.assertEqual(body1["memories"][0]["memory_id"], memory_id)
+
+        st_del, del_body = self._delete(
+            f"/api/library/book-chat/memory?book_id={book_id}&memory_id={memory_id}"
+        )
+        self.assertEqual(st_del, 200)
+        self.assertTrue(del_body.get("deleted"))
+
+        st_get2, body2 = self._get_json(f"/api/library/book-chat/memory?book_id={book_id}")
+        self.assertEqual(body2.get("memories"), [])
+
+    def test_book_chat_memory_post_requires_fields(self) -> None:
+        st, body = self._post_json("/api/library/book-chat/memory", {})
         self.assertEqual(st, 400)
         self.assertIn("error", body)
 
