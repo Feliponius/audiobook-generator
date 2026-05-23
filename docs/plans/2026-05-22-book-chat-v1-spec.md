@@ -793,6 +793,62 @@ Never present Wikipedia/news/interview material as if it came from the book.
 
 ---
 
+## Implementation prerequisites and execution plan
+
+### Pre-flight checkpoint
+
+- The audiobook folder must be protected by git before major changes.
+- Exclude generated outputs, local libraries, imported books, venvs, and secrets from git.
+- Commit a baseline before implementation and make additional commits after meaningful verified milestones.
+
+### Required local packages
+
+For local embeddings and retrieval smoke tests:
+
+- `sentence-transformers`
+- `scikit-learn`
+- existing `torch`, `transformers`, `numpy`, and `requests`
+
+Optional/likely packages for richer EPUB extraction later:
+
+- `ebooklib`
+- `beautifulsoup4`
+
+### Spike gates before full build
+
+1. **Embedding smoke test**
+   - Load `BAAI/bge-base-en-v1.5` locally.
+   - Embed several sample passages and one query.
+   - Verify cosine similarity returns the expected passage.
+
+2. **Hermes/Codex model-gateway proof-of-concept**
+   - Add a small app-callable Python wrapper that shells out to Hermes for a plain non-agent completion.
+   - Target `gpt-5.5` through OpenAI Codex OAuth first.
+   - Return structured metadata: provider route, model, fallback used, raw text.
+   - Keep it isolated from production chat code until verified.
+
+3. **Gemini fallback proof**
+   - If Hermes/Codex fails or is unavailable, verify a Gemini API fallback path can answer the same simple prompt.
+   - Use the existing Gemini key from the local environment/Hermes `.env` for the personal app path.
+
+4. **Cursor implementation phase**
+   - Once the POC is good enough, use Cursor CLI as the code-change executor.
+   - Use **Composer 2.5 regular / non-fast** as requested.
+   - Hermes acts as orchestrator: prepare task briefs, run Cursor, inspect diffs, run tests, and re-prompt Cursor for fixes.
+   - Do not let Cursor skip tests; preserve the baseline git checkpoint.
+
+### Initial build slices for Cursor
+
+1. Add model gateway abstraction and tests.
+2. Add local BGE embedding/retrieval module and tests.
+3. Add passage/chunk storage and indexing API.
+4. Add grounded chat endpoint with citations and fallback metadata.
+5. Add minimal mobile-first chat UI on book detail/reader.
+6. Add memory save/list/delete behavior.
+7. Add author-voice mode and learning-action buttons.
+
+---
+
 ## Notes for future implementation
 
 The current audiobook app already has useful foundations:
