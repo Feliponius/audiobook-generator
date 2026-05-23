@@ -18,6 +18,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 import monitor_server  # noqa: E402
 from book_chat.embeddings import FakeHashEmbedder  # noqa: E402
+from tests.epub_fixtures import write_tiny_epub  # noqa: E402
 
 
 def _pick_free_port() -> int:
@@ -173,6 +174,75 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
         st, body = self._post_json("/api/library/book-chat/memory", {})
         self.assertEqual(st, 400)
         self.assertIn("error", body)
+
+    def _seed_catalog_book_with_epub(self, book_id: str, epub_path: Path) -> None:
+        rel = epub_path.relative_to(self.root).as_posix()
+        catalog = {
+            "version": 1,
+            "books": [
+                {
+                    "id": book_id,
+                    "title": "Auto Index Test",
+                    "author": "Test",
+                    "epub_rel_path": rel,
+                }
+            ],
+        }
+        monitor_server.write_catalog(self.root, catalog)
+
+    def test_book_chat_auto_index_from_epub(self) -> None:
+        book_id = "auto-index-epub-001"
+        uploads = self.root / "library" / "uploads" / book_id
+        uploads.mkdir(parents=True, exist_ok=True)
+        epub_path = uploads / "book.epub"
+        write_tiny_epub(
+            epub_path,
+            [
+                (
+                    "Chapter One",
+                    "Discipline is built through small steps taken every day.",
+                ),
+            ],
+        )
+        self._seed_catalog_book_with_epub(book_id, epub_path)
+
+        st0, status0 = self._get_json(f"/api/library/book-chat/index-status?book_id={book_id}")
+        self.assertEqual(st0, 200)
+        self.assertTrue(status0.get("ok"))
+        self.assertFalse(status0.get("indexed"))
+        self.assertEqual(status0.get("passage_count"), 0)
+
+        st_idx, idx = self._post_json(
+            "/api/library/book-chat/auto-index",
+            {"book_id": book_id},
+        )
+        self.assertEqual(st_idx, 200)
+        self.assertTrue(idx.get("ok"))
+        self.assertEqual(idx.get("book_id"), book_id)
+        self.assertGreater(idx.get("passage_count", 0), 0)
+        self.assertIn(idx.get("status"), ("indexed", "already_indexed"))
+
+        st1, status1 = self._get_json(f"/api/library/book-chat/index-status?book_id={book_id}")
+        self.assertTrue(status1.get("indexed"))
+        self.assertGreater(status1.get("passage_count", 0), 0)
+
+        st_q, q = self._post_json(
+            "/api/library/book-chat/query",
+            {
+                "book_id": book_id,
+                "question": "How is discipline built?",
+                "top_k": 2,
+            },
+        )
+        self.assertEqual(st_q, 200)
+        self.assertGreaterEqual(len(q.get("citations") or []), 1)
+        cite_text = " ".join(
+            (c.get("snippet") or "") for c in (q.get("citations") or [])
+        ).lower()
+        self.assertTrue(
+            "discipline" in cite_text or "small steps" in cite_text,
+            msg=cite_text,
+        )
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ from book_chat.service import (
     DEFAULT_ANSWER_MODEL,
     DEFAULT_EMBEDDING_MODEL,
     BookChatNotFoundError,
+    get_index_status,
     index_passages,
     query_passages,
 )
@@ -84,6 +85,29 @@ def test_query_passages_missing_index_raises(workspace: Path) -> None:
     with pytest.raises(BookChatNotFoundError) as exc:
         query_passages(workspace, "missing-book", "hello?", embedder=embedder)
     assert "missing-book" in str(exc.value)
+
+
+def test_get_index_status_unindexed(workspace: Path) -> None:
+    status = get_index_status(workspace, "book-1")
+    assert status["ok"] is True
+    assert status["book_id"] == "book-1"
+    assert status["indexed"] is False
+    assert status["passage_count"] == 0
+
+
+def test_get_index_status_indexed(workspace: Path) -> None:
+    embedder = FakeHashEmbedder(dimension=8)
+    index_passages(
+        workspace,
+        "book-1",
+        [{"chapter": "Intro", "text": "Indexed passage text."}],
+        embedder=embedder,
+    )
+    status = get_index_status(workspace, "book-1")
+    assert status["indexed"] is True
+    assert status["passage_count"] == 1
+    assert status["embedding_model"] == embedder.model_name
+    assert "library/book_chat/book-1/passages.jsonl" in status["index_path"]
 
 
 def test_index_passages_replaces_existing_index(workspace: Path) -> None:

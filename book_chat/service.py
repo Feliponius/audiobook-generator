@@ -18,6 +18,63 @@ class BookChatNotFoundError(FileNotFoundError):
     """Raised when a book has no passage index on disk."""
 
 
+class BookChatExtractionError(ValueError):
+    """Raised when EPUB passage extraction yields no usable text."""
+
+
+def get_index_status(root: Path, book_id: str) -> dict[str, Any]:
+    path = index_path_for_book(root, book_id)
+    passages = read_passages(path)
+    if passages:
+        model = passages[0].get("embedding_model")
+        if not isinstance(model, str) or not model.strip():
+            model = DEFAULT_EMBEDDING_MODEL
+        return {
+            "ok": True,
+            "book_id": book_id,
+            "indexed": True,
+            "passage_count": len(passages),
+            "embedding_model": model,
+            "index_path": path.relative_to(root).as_posix(),
+        }
+    return {
+        "ok": True,
+        "book_id": book_id,
+        "indexed": False,
+        "passage_count": 0,
+    }
+
+
+def auto_index_book_epub(
+    root: Path,
+    book_id: str,
+    epub_path: Path,
+    *,
+    force: bool = False,
+    embedder: TextEmbedder | None = None,
+) -> dict[str, Any]:
+    status = get_index_status(root, book_id)
+    if status.get("indexed") and not force:
+        return {**status, "status": "already_indexed"}
+
+    from epub_to_audiobook import extract_chapters
+
+    from book_chat.epub_extractor import passages_from_chapters
+
+    try:
+        book_title, chapters = extract_chapters(epub_path)
+        raw_passages = passages_from_chapters(chapters)
+    except Exception as exc:
+        raise BookChatExtractionError(f"EPUB extraction failed: {exc}") from exc
+    if not raw_passages:
+        raise BookChatExtractionError("No passages extracted from EPUB")
+
+    result = index_passages(root, book_id, raw_passages, embedder=embedder)
+    result["status"] = "indexed"
+    result["book_title"] = book_title
+    return result
+
+
 def _default_embedder() -> TextEmbedder:
     return LocalBGEEmbedder()
 

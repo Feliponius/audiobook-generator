@@ -1313,6 +1313,16 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/settings":
             self._send_json({"settings": read_app_settings(self.root)})
             return
+        if parsed.path == "/api/library/book-chat/index-status":
+            qs = parse_qs(parsed.query)
+            book_id = (qs.get("book_id") or [None])[0]
+            if not book_id or not str(book_id).strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            from book_chat.service import get_index_status
+
+            self._send_json(get_index_status(self.root, str(book_id).strip()))
+            return
         if parsed.path == "/api/library/book-chat/memory":
             qs = parse_qs(parsed.query)
             book_id = (qs.get("book_id") or [None])[0]
@@ -1907,6 +1917,51 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "missing id"}, status=400)
                 return
             payload = remove_library_book(root, str(book_id))
+            self._send_json(payload)
+            return
+
+        if parsed.path == "/api/library/book-chat/auto-index":
+            body = self._read_json_body()
+            if not body:
+                self._send_json({"error": "invalid json"}, status=400)
+                return
+            book_id = body.get("book_id")
+            if not isinstance(book_id, str) or not book_id.strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            book_id = book_id.strip()
+            force = bool(body.get("force"))
+            catalog = read_catalog(root)
+            book = next((b for b in catalog.get("books", []) if b.get("id") == book_id), None)
+            if not book:
+                self._send_json({"error": "book not found", "book_id": book_id}, status=404)
+                return
+            rel = book.get("epub_rel_path")
+            if not rel:
+                self._send_json({"error": "no epub", "book_id": book_id}, status=404)
+                return
+            epub_path = (root / rel).resolve()
+            try:
+                epub_path.relative_to(root.resolve())
+            except ValueError:
+                self._send_json({"error": "invalid epub path", "book_id": book_id}, status=400)
+                return
+            if not epub_path.is_file():
+                self._send_json({"error": "epub missing on disk", "book_id": book_id}, status=404)
+                return
+            from book_chat.service import BookChatExtractionError, auto_index_book_epub
+
+            try:
+                payload = auto_index_book_epub(
+                    root,
+                    book_id,
+                    epub_path,
+                    force=force,
+                    embedder=book_chat_embedder_factory(),
+                )
+            except BookChatExtractionError as exc:
+                self._send_json({"error": str(exc), "book_id": book_id}, status=422)
+                return
             self._send_json(payload)
             return
 

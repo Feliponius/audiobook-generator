@@ -121,8 +121,12 @@ class DashboardShellTests(unittest.TestCase):
         self.assertIn("Give me a real-life example", html)
         self.assertIn("Turn this into a practice exercise", html)
         self.assertIn("Save this insight", html)
+        self.assertIn('id="bookChatIndexStatus"', html)
+        self.assertIn('id="bookChatIndexBtn"', html)
         self.assertIn("/api/library/book-chat/query", html)
         self.assertIn("/api/library/book-chat/memory", html)
+        self.assertIn("/api/library/book-chat/index-status", html)
+        self.assertIn("/api/library/book-chat/auto-index", html)
 
     def test_audiobook_chapter_labels_use_api_one_based_index(self) -> None:
         """run.chapters[].index is already 1-based; do not add 1 for display or mini-player hints."""
