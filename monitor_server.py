@@ -27,6 +27,12 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent
 DASHBOARD_PATH = ROOT / "dashboard" / "index.html"
+DASHBOARD_STATIC_ROUTES = {
+    "/manifest.webmanifest": ROOT / "dashboard" / "manifest.webmanifest",
+    "/assets/app-icon.svg": ROOT / "dashboard" / "assets" / "app-icon.svg",
+    "/assets/app-icon-192.png": ROOT / "dashboard" / "assets" / "app-icon-192.png",
+    "/assets/app-icon-512.png": ROOT / "dashboard" / "assets" / "app-icon-512.png",
+}
 
 
 _book_chat_embedder_lock = threading.Lock()
@@ -1311,6 +1317,12 @@ class Handler(BaseHTTPRequestHandler):
             return "application/vnd.apple.mpegurl"
         if path.suffix == ".epub":
             return "application/epub+zip"
+        if path.suffix == ".webmanifest":
+            return "application/manifest+json; charset=utf-8"
+        if path.suffix == ".svg":
+            return "image/svg+xml; charset=utf-8"
+        if path.suffix == ".png":
+            return "image/png"
         return "application/octet-stream"
 
     def _parse_range_header(self, size: int) -> tuple[int, int] | None:
@@ -1421,6 +1433,13 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path in {"/", "/index.html"}:
             self._send_text(DASHBOARD_PATH.read_text(encoding="utf-8"))
+            return
+        if parsed.path in DASHBOARD_STATIC_ROUTES:
+            static_path = DASHBOARD_STATIC_ROUTES[parsed.path]
+            if static_path.is_file():
+                self._serve_file(static_path, write_body=True)
+            else:
+                self._send_json({"error": "asset not found"}, status=404)
             return
         if parsed.path == "/api/library":
             catalog = read_catalog(self.root)

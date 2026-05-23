@@ -15,6 +15,14 @@ class DashboardShellTests(unittest.TestCase):
         self.assertIn("arrayBuffer()", html)
         self.assertIn("const book = ePub(epubData);", html)
 
+    def test_dashboard_declares_android_home_screen_manifest_and_icons(self) -> None:
+        html = DASHBOARD.read_text(encoding="utf-8")
+        self.assertIn('rel="manifest" href="/manifest.webmanifest"', html)
+        self.assertIn('name="theme-color" content="#0f1f18"', html)
+        self.assertIn('rel="icon" type="image/png" sizes="192x192" href="/assets/app-icon-192.png"', html)
+        self.assertIn('rel="apple-touch-icon" href="/assets/app-icon-192.png"', html)
+        self.assertIn('name="mobile-web-app-capable" content="yes"', html)
+
     def test_settings_ui_mentions_script_only_and_workers(self) -> None:
         html = DASHBOARD.read_text(encoding="utf-8")
         self.assertNotIn('id="setWorkers"', html)

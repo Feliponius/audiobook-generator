@@ -82,6 +82,11 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read().decode("utf-8"))
 
+    def _get_bytes(self, path: str) -> tuple[int, str, bytes]:
+        req = urllib.request.Request(self._url(path), method="GET")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status, resp.headers.get("Content-Type", ""), resp.read()
+
     def _delete(self, path: str) -> tuple[int, Any]:
         req = urllib.request.Request(self._url(path), method="DELETE")
         try:
@@ -91,6 +96,22 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
         except urllib.error.HTTPError as e:
             raw = e.read().decode("utf-8")
             return e.code, json.loads(raw) if raw.strip() else {}
+
+    def test_dashboard_manifest_and_icons_are_served(self) -> None:
+        st_manifest, manifest = self._get_json("/manifest.webmanifest")
+        self.assertEqual(st_manifest, 200)
+        self.assertEqual(manifest.get("name"), "Audiobook Library")
+        self.assertEqual(manifest.get("short_name"), "Audiobooks")
+        self.assertEqual(manifest.get("display"), "standalone")
+        self.assertEqual(manifest.get("theme_color"), "#0f1f18")
+        icon_srcs = [icon.get("src") for icon in manifest.get("icons") or []]
+        self.assertIn("/assets/app-icon-192.png", icon_srcs)
+        self.assertIn("/assets/app-icon-512.png", icon_srcs)
+
+        st_icon, content_type, body = self._get_bytes("/assets/app-icon-192.png")
+        self.assertEqual(st_icon, 200)
+        self.assertIn("image/png", content_type)
+        self.assertTrue(body.startswith(b"\x89PNG\r\n\x1a\n"))
 
     def test_book_chat_index_and_query(self) -> None:
         book_id = "test-book-001"
