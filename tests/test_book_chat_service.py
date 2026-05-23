@@ -9,12 +9,15 @@ import pytest
 
 from book_chat.embeddings import FakeHashEmbedder
 from book_chat.index_store import index_path_for_book, read_passages
+from book_chat.model_gateway import HermesGatewayResult
 from book_chat.service import (
     DEFAULT_ANSWER_MODEL,
     DEFAULT_EMBEDDING_MODEL,
     BookChatNotFoundError,
+    build_book_chat_prompt,
     get_index_status,
     index_passages,
+    normalize_answer_action,
     query_passages,
 )
 
@@ -150,3 +153,112 @@ def test_index_passages_emits_progress_callback(workspace: Path) -> None:
     complete_events = [e for e in events if e.get("stage") == "complete"]
     assert complete_events
     assert complete_events[-1]["percent"] == 100
+
+
+def test_normalize_answer_action_defaults_unknown_to_answer() -> None:
+    assert normalize_answer_action(None) == "answer"
+    assert normalize_answer_action("") == "answer"
+    assert normalize_answer_action("SOCRATIC") == "socratic"
+    assert normalize_answer_action("explain") == "explain"
+    assert normalize_answer_action("not-a-mode") == "answer"
+
+
+def test_build_book_chat_prompt_socratic_includes_grounding_and_passage_ids() -> None:
+    hits = [
+        {
+            "passage_id": "passage_book-1_0",
+            "chapter": "Intro",
+            "text": "Influence grows through trust and reciprocity.",
+            "snippet": "Influence grows through trust",
+        }
+    ]
+    prompt = build_book_chat_prompt("How do I build influence?", hits, action="socratic")
+    assert "passage_book-1_0" in prompt
+    assert "Socratic" in prompt or "socratic" in prompt
+    assert "do not invent" in prompt.lower() or "not invent" in prompt.lower()
+    assert "How do I build influence?" in prompt
+
+
+def test_build_book_chat_prompt_practice_requires_citations() -> None:
+    hits = [
+        {
+            "passage_id": "passage_book-1_1",
+            "chapter": "Ch2",
+            "text": "Practice small conversations daily.",
+            "snippet": "Practice small conversations",
+        }
+    ]
+    prompt = build_book_chat_prompt("How can I practice?", hits, action="practice")
+    assert "practice" in prompt.lower()
+    assert "passage_book-1_1" in prompt
+    assert "citation" in prompt.lower() or "Sources" in prompt or "[passage_" in prompt
+
+
+def test_query_passages_use_model_socratic_calls_gateway(workspace: Path, monkeypatch) -> None:
+    embedder = FakeHashEmbedder(dimension=16)
+    index_passages(
+        workspace,
+        "book-1",
+        [{"chapter": "Intro", "text": "Ask questions before offering advice."}],
+        embedder=embedder,
+    )
+    captured: dict = {}
+
+    def fake_gateway(prompt: str, *, model: str = DEFAULT_ANSWER_MODEL, **kwargs):
+        captured["prompt"] = prompt
+        captured["model"] = model
+        return HermesGatewayResult(
+            ok=True,
+            provider="hermes_openai_codex",
+            model=model,
+            text="1. What assumptions are you making?\n2. What would the book suggest?",
+        )
+
+    monkeypatch.setattr("book_chat.service.ask_via_hermes_codex", fake_gateway)
+    out = query_passages(
+        workspace,
+        "book-1",
+        "dealing with coworkers",
+        embedder=embedder,
+        use_model=True,
+        action="socratic",
+    )
+    assert "Socratic" in captured["prompt"] or "socratic" in captured["prompt"]
+    assert out["action"] == "socratic"
+    assert out["fallback_used"] is False
+    assert out["model_provider"] == "hermes_openai_codex"
+    assert "?" in out["answer"]
+
+
+def test_query_passages_challenge_falls_back_action_aware(workspace: Path, monkeypatch) -> None:
+    embedder = FakeHashEmbedder(dimension=16)
+    index_passages(
+        workspace,
+        "book-1",
+        [{"chapter": "Intro", "text": "Assumptions about laziness may hide deeper blockers."}],
+        embedder=embedder,
+    )
+
+    def failing_gateway(*args, **kwargs):
+        return HermesGatewayResult(
+            ok=False,
+            provider="hermes_openai_codex",
+            model=DEFAULT_ANSWER_MODEL,
+            text="",
+            error="timeout",
+        )
+
+    monkeypatch.setattr("book_chat.service.ask_via_hermes_codex", failing_gateway)
+    out = query_passages(
+        workspace,
+        "book-1",
+        "lazy coworkers",
+        embedder=embedder,
+        use_model=True,
+        action="challenge",
+    )
+    assert out["action"] == "challenge"
+    assert out["fallback_used"] is True
+    assert out["model_provider"] == "retrieval_only"
+    answer = out["answer"].lower()
+    assert "fallback" in answer or "assumption" in answer

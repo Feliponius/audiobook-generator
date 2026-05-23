@@ -2202,7 +2202,19 @@ class Handler(BaseHTTPRequestHandler):
                     top_k = max(1, min(int(body.get("top_k")), 20))
                 except (TypeError, ValueError):
                     top_k = 3
-            use_model = bool(body.get("use_model"))
+            use_model = body.get("use_model")
+            if use_model is None:
+                use_model = True
+            else:
+                use_model = bool(use_model)
+            action = body.get("action")
+            model = body.get("model")
+            if not isinstance(model, str) or not model.strip():
+                from book_chat.service import DEFAULT_ANSWER_MODEL
+
+                model = DEFAULT_ANSWER_MODEL
+            else:
+                model = model.strip()
             from book_chat.service import BookChatNotFoundError, query_passages
 
             try:
@@ -2213,6 +2225,8 @@ class Handler(BaseHTTPRequestHandler):
                     top_k=top_k,
                     embedder=book_chat_embedder_factory(),
                     use_model=use_model,
+                    model=model,
+                    action=action,
                 )
             except BookChatNotFoundError as exc:
                 self._send_json({"error": str(exc), "book_id": book_id.strip()}, status=404)

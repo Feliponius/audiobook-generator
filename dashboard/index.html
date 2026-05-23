@@ -1685,6 +1685,7 @@
       bookChatLastAnswer: '',
       bookChatIndexed: false,
       bookChatIndexPollTimer: null,
+      bookChatAction: 'answer',
       poll: null,
       rendition: null,
       readerEpubBook: null,
@@ -2323,6 +2324,35 @@
       if (lightBtn) lightBtn.classList.toggle('active', t === 'light');
     }
 
+    const BOOK_CHAT_ACTION_LABELS = {
+      answer: 'Ask this book · grounded in indexed passages',
+      explain: 'Explain another way · simpler re-explanation',
+      socratic: 'Socratic mode · reflective questions',
+      challenge: 'Challenge mode · test assumptions gently',
+      example: 'Example mode · concrete scenario',
+      practice: 'Practice mode · short exercise',
+    };
+
+    function setBookChatActionUi(action) {
+      const mode = action || 'answer';
+      const subtitle = $('bookChatSubtitle');
+      if (subtitle) {
+        subtitle.textContent = BOOK_CHAT_ACTION_LABELS[mode] || BOOK_CHAT_ACTION_LABELS.answer;
+      }
+      const ta = $('bookChatQuestion');
+      if (ta) {
+        const placeholders = {
+          answer: 'Ask about this book…',
+          explain: 'What should I explain another way?',
+          socratic: 'What topic should I ask Socratic questions about?',
+          challenge: 'What assumptions should we challenge?',
+          example: 'What should I illustrate with a real-life example?',
+          practice: 'What should become a practice exercise?',
+        };
+        ta.placeholder = placeholders[mode] || placeholders.answer;
+      }
+    }
+
     const BOOK_CHAT_QUICK_PREFIX = {
       explain: 'Explain this another way: ',
       socratic: 'Ask me Socratic questions about: ',
@@ -2537,18 +2567,26 @@
           return;
         }
       }
-      status.textContent = 'Searching indexed passages…';
+      status.textContent = 'Reading passages and asking GPT-5.5…';
       sendBtn.disabled = true;
       try {
         const data = await fetchJson('/api/library/book-chat/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ book_id: id, question }),
+          body: JSON.stringify({
+            book_id: id,
+            question,
+            action: state.bookChatAction || 'answer',
+            use_model: true,
+            model: 'gpt-5.5',
+          }),
         });
         state.bookChatLastAnswer = data.answer || '';
         $('bookChatAnswer').textContent = state.bookChatLastAnswer || 'No answer returned.';
         renderBookChatCitations(data.citations);
-        status.textContent = data.fallback_used ? 'Answer (retrieval fallback)' : 'Answer ready';
+        status.textContent = data.fallback_used
+          ? 'Answer ready (retrieval fallback)'
+          : 'GPT-5.5 answer ready';
       } catch (e) {
         status.textContent = '';
         $('bookChatAnswer').textContent = 'Could not get an answer. Try indexing this book again.';
@@ -2595,6 +2633,8 @@
         }
         const prefix = BOOK_CHAT_QUICK_PREFIX[action];
         if (!prefix) return;
+        state.bookChatAction = action;
+        setBookChatActionUi(action);
         const ta = $('bookChatQuestion');
         const cur = (ta.value || '').trim();
         ta.value = prefix + (cur ? cur : '');
@@ -2607,10 +2647,12 @@
       state.currentBookId = id;
       state.bookChatLastAnswer = '';
       state.bookChatIndexed = false;
+      state.bookChatAction = 'answer';
       $('bookChatQuestion').value = '';
       $('bookChatAnswer').textContent = 'Answers appear here after you send a question.';
       $('bookChatCitations').innerHTML = '';
       $('bookChatStatus').textContent = '';
+      setBookChatActionUi('answer');
       $('bookChatIndexBtn').classList.add('hidden');
       $('bookChatIndexStatus').textContent = 'Checking passage index…';
       initBookChatQuickActions();
@@ -2620,7 +2662,7 @@
         if (data.book && data.book.title) title = data.book.title;
       } catch (_) {}
       $('bookChatTitle').textContent = title;
-      $('bookChatSubtitle').textContent = 'Ask this book · grounded in indexed passages';
+      setBookChatActionUi(state.bookChatAction);
       $('bookChatSendBtn').onclick = () => sendBookChatQuery().catch(e => showToast(e.message || String(e)));
       $('bookChatIndexBtn').onclick = () => runBookChatAutoIndex(id).catch(e => showToast(e.message || String(e)));
       $('bookChatSaveInsight').onclick = (ev) => {

@@ -111,7 +111,12 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
 
         st_q, q = self._post_json(
             "/api/library/book-chat/query",
-            {"book_id": book_id, "question": "How is discipline built?", "top_k": 2},
+            {
+                "book_id": book_id,
+                "question": "How is discipline built?",
+                "top_k": 2,
+                "use_model": False,
+            },
         )
         self.assertEqual(st_q, 200)
         self.assertEqual(q.get("book_id"), book_id)
@@ -232,6 +237,7 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
                 "book_id": book_id,
                 "question": "How is discipline built?",
                 "top_k": 2,
+                "use_model": False,
             },
         )
         self.assertEqual(st_q, 200)
@@ -311,6 +317,115 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
         self.assertEqual(st_post, 200)
         self.assertEqual(job.get("status"), "running")
         self.assertEqual(job.get("started_at"), "2026-05-23T12:00:00+00:00")
+
+    def test_book_chat_query_action_socratic_retrieval_only(self) -> None:
+        book_id = "action-socratic-001"
+        st_idx, _ = self._post_json(
+            "/api/library/book-chat/index",
+            {
+                "book_id": book_id,
+                "passages": [{"chapter": "Intro", "text": "Ask before advising."}],
+            },
+        )
+        self.assertEqual(st_idx, 200)
+        st_q, q = self._post_json(
+            "/api/library/book-chat/query",
+            {
+                "book_id": book_id,
+                "question": "coworkers",
+                "action": "socratic",
+                "use_model": False,
+            },
+        )
+        self.assertEqual(st_q, 200)
+        self.assertEqual(q.get("action"), "socratic")
+
+    def test_book_chat_query_defaults_use_model_true(self) -> None:
+        from book_chat.model_gateway import HermesGatewayResult
+
+        book_id = "action-default-model-001"
+        st_idx, _ = self._post_json(
+            "/api/library/book-chat/index",
+            {
+                "book_id": book_id,
+                "passages": [{"chapter": "Intro", "text": "Practice small steps daily."}],
+            },
+        )
+        self.assertEqual(st_idx, 200)
+
+        captured: dict = {}
+
+        def fake_gateway(prompt, *, model="gpt-5.5", **kwargs):
+            captured["model"] = model
+            captured["prompt"] = prompt
+            return HermesGatewayResult(
+                ok=True,
+                provider="hermes_openai_codex",
+                model=model,
+                text="GPT answer ready.",
+            )
+
+        import book_chat.service as book_chat_service
+
+        orig = book_chat_service.ask_via_hermes_codex
+        book_chat_service.ask_via_hermes_codex = fake_gateway
+        try:
+            st_q, q = self._post_json(
+                "/api/library/book-chat/query",
+                {"book_id": book_id, "question": "How to practice?", "action": "explain"},
+            )
+        finally:
+            book_chat_service.ask_via_hermes_codex = orig
+
+        self.assertEqual(st_q, 200)
+        self.assertEqual(captured.get("model"), "gpt-5.5")
+        self.assertEqual(q.get("action"), "explain")
+        self.assertEqual(q.get("model_provider"), "hermes_openai_codex")
+        self.assertFalse(q.get("fallback_used"))
+
+    def test_book_chat_query_passes_custom_model(self) -> None:
+        from book_chat.model_gateway import HermesGatewayResult
+
+        book_id = "action-custom-model-001"
+        self._post_json(
+            "/api/library/book-chat/index",
+            {
+                "book_id": book_id,
+                "passages": [{"chapter": "Intro", "text": "Lead with curiosity."}],
+            },
+        )
+
+        captured: dict = {}
+
+        def fake_gateway(prompt, *, model="gpt-5.5", **kwargs):
+            captured["model"] = model
+            return HermesGatewayResult(
+                ok=True,
+                provider="hermes_openai_codex",
+                model=model,
+                text="Custom model answer.",
+            )
+
+        import book_chat.service as book_chat_service
+
+        orig = book_chat_service.ask_via_hermes_codex
+        book_chat_service.ask_via_hermes_codex = fake_gateway
+        try:
+            st_q, q = self._post_json(
+                "/api/library/book-chat/query",
+                {
+                    "book_id": book_id,
+                    "question": "leadership",
+                    "use_model": True,
+                    "model": "gpt-5.5",
+                },
+            )
+        finally:
+            book_chat_service.ask_via_hermes_codex = orig
+
+        self.assertEqual(st_q, 200)
+        self.assertEqual(captured.get("model"), "gpt-5.5")
+        self.assertEqual(q.get("model"), "gpt-5.5")
 
 
 if __name__ == "__main__":

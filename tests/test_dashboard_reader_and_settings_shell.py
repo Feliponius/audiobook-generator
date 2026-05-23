@@ -135,6 +135,12 @@ class DashboardShellTests(unittest.TestCase):
         self.assertIn("bookChatIndexPollTimer", html)
         self.assertIn("Could not check index status. You can still try indexing this book.", html)
         self.assertIn("$('bookChatIndexBtn').classList.remove('hidden');", html)
+        self.assertIn("bookChatAction", html)
+        self.assertIn("use_model: true", html)
+        self.assertIn("model: 'gpt-5.5'", html)
+        self.assertIn("action: state.bookChatAction", html)
+        self.assertIn("Reading passages and asking GPT-5.5", html)
+        self.assertIn("GPT-5.5 answer ready", html)
 
     def test_audiobook_chapter_labels_use_api_one_based_index(self) -> None:
         """run.chapters[].index is already 1-based; do not add 1 for display or mini-player hints."""
