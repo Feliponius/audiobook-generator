@@ -760,6 +760,74 @@
       margin: 0;
       min-height: 1.1em;
     }
+    .book-chat-saved {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      padding: 10px 12px;
+    }
+    .book-chat-saved > summary {
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .book-chat-saved > summary::-webkit-details-marker { display: none; }
+    #bookChatSavedInsightsCount {
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    #bookChatSavedInsightsList {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.86rem;
+    }
+    .book-chat-saved-empty {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+    .book-chat-saved-item {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--chip-bg);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .book-chat-saved-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.4;
+      max-height: 8.5em;
+      overflow: auto;
+    }
+    .book-chat-saved-meta {
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+    .book-chat-saved-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .book-chat-saved-actions button {
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+    }
 
     .bottom-nav {
       position: fixed;
@@ -1531,6 +1599,10 @@
         <button type="button" data-book-chat-action="practice">Turn this into a practice exercise</button>
         <button type="button" data-book-chat-action="save" id="bookChatSaveInsight">Save this insight</button>
       </div>
+      <details class="book-chat-saved" id="bookChatSavedInsightsSection" open>
+        <summary>Saved insights <span id="bookChatSavedInsightsCount">0</span></summary>
+        <div id="bookChatSavedInsightsList" class="book-chat-saved-empty">No saved insights yet. Save an answer to keep it with this book.</div>
+      </details>
     </div>
   </div>
 
@@ -1686,6 +1758,7 @@
       bookChatIndexed: false,
       bookChatIndexPollTimer: null,
       bookChatAction: 'answer',
+      bookChatSavedInsights: [],
       poll: null,
       rendition: null,
       readerEpubBook: null,
@@ -2599,6 +2672,89 @@
       }
     }
 
+    function formatBookChatSavedInsightWhen(createdAt) {
+      if (!createdAt) return '';
+      const d = new Date(createdAt);
+      if (!Number.isFinite(d.getTime())) return String(createdAt);
+      return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function sortBookChatSavedInsights(memories) {
+      const list = Array.isArray(memories) ? memories.slice() : [];
+      list.sort((a, b) => {
+        const ta = new Date(a && a.created_at || 0).getTime();
+        const tb = new Date(b && b.created_at || 0).getTime();
+        if (Number.isFinite(tb) && Number.isFinite(ta)) return tb - ta;
+        return 0;
+      });
+      return list;
+    }
+
+    function renderBookChatSavedInsights(memories) {
+      const listEl = $('bookChatSavedInsightsList');
+      const countEl = $('bookChatSavedInsightsCount');
+      if (!listEl || !countEl) return;
+      const sorted = sortBookChatSavedInsights(memories);
+      state.bookChatSavedInsights = sorted;
+      countEl.textContent = String(sorted.length);
+      listEl.innerHTML = '';
+      if (!sorted.length) {
+        listEl.className = 'book-chat-saved-empty';
+        listEl.textContent = 'No saved insights yet. Save an answer to keep it with this book.';
+        return;
+      }
+      listEl.className = '';
+      for (const mem of sorted) {
+        const item = document.createElement('article');
+        item.className = 'book-chat-saved-item';
+        const textEl = document.createElement('div');
+        textEl.className = 'book-chat-saved-text';
+        textEl.textContent = (mem && mem.text) || '';
+        const metaEl = document.createElement('div');
+        metaEl.className = 'book-chat-saved-meta';
+        const metaBits = [];
+        if (mem && mem.source) metaBits.push(mem.source);
+        const when = formatBookChatSavedInsightWhen(mem && mem.created_at);
+        if (when) metaBits.push(when);
+        metaEl.textContent = metaBits.join(' · ');
+        const actions = document.createElement('div');
+        actions.className = 'book-chat-saved-actions';
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.textContent = 'Delete';
+        const memoryId = mem && mem.memory_id;
+        const bookId = state.currentBookId;
+        delBtn.addEventListener('click', () => {
+          if (!bookId || !memoryId) return;
+          deleteBookChatSavedInsight(bookId, memoryId).catch(e => showToast(e.message || String(e)));
+        });
+        actions.appendChild(delBtn);
+        item.appendChild(textEl);
+        item.appendChild(metaEl);
+        item.appendChild(actions);
+        listEl.appendChild(item);
+      }
+    }
+
+    async function loadBookChatSavedInsights(bookId) {
+      if (!bookId) return;
+      const data = await fetchJson(
+        '/api/library/book-chat/memory?book_id=' + encodeURIComponent(bookId)
+      );
+      renderBookChatSavedInsights(data.memories || []);
+    }
+
+    async function deleteBookChatSavedInsight(bookId, memoryId) {
+      if (!bookId || !memoryId) return;
+      await fetchJson(
+        '/api/library/book-chat/memory?book_id=' + encodeURIComponent(bookId)
+        + '&memory_id=' + encodeURIComponent(memoryId),
+        { method: 'DELETE' }
+      );
+      showToast('Insight deleted');
+      await loadBookChatSavedInsights(bookId);
+    }
+
     async function saveBookChatInsight() {
       const id = state.currentBookId;
       if (!id) return;
@@ -2614,6 +2770,7 @@
           body: JSON.stringify({ book_id: id, text, source: 'insight' }),
         });
         showToast('Insight saved');
+        await loadBookChatSavedInsights(id);
       } catch (e) {
         showToast(e.message || String(e));
       }
@@ -2676,6 +2833,7 @@
         $('bookChatSendBtn').disabled = false;
         showToast(e.message || String(e));
       });
+      loadBookChatSavedInsights(id).catch(e => showToast(e.message || String(e)));
     }
 
     function syncNavTabs(routeName) {

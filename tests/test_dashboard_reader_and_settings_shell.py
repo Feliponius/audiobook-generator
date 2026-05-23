@@ -142,6 +142,21 @@ class DashboardShellTests(unittest.TestCase):
         self.assertIn("Reading passages and asking GPT-5.5", html)
         self.assertIn("GPT-5.5 answer ready", html)
 
+    def test_book_chat_saved_insights_list_ui(self) -> None:
+        html = DASHBOARD.read_text(encoding="utf-8")
+        self.assertIn('id="bookChatSavedInsightsSection"', html)
+        self.assertIn('id="bookChatSavedInsightsCount"', html)
+        self.assertIn('id="bookChatSavedInsightsList"', html)
+        self.assertIn("loadBookChatSavedInsights", html)
+        self.assertIn("renderBookChatSavedInsights", html)
+        self.assertIn("deleteBookChatSavedInsight", html)
+        self.assertIn("DELETE", html)
+        self.assertIn("/api/library/book-chat/memory?book_id=", html)
+        self.assertIn(
+            "No saved insights yet. Save an answer to keep it with this book.",
+            html,
+        )
+
     def test_audiobook_chapter_labels_use_api_one_based_index(self) -> None:
         """run.chapters[].index is already 1-based; do not add 1 for display or mini-player hints."""
         html = DASHBOARD.read_text(encoding="utf-8")
