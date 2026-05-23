@@ -55,3 +55,44 @@ def test_delete_memory_missing_returns_false() -> None:
     with TemporaryDirectory() as td:
         root = Path(td)
         assert delete_memory(root, "b1", "no-such-id") is False
+
+
+def test_save_memory_stores_optional_metadata() -> None:
+    with TemporaryDirectory() as td:
+        root = Path(td)
+        rec = save_memory(
+            root,
+            "b1",
+            "Full answer text.",
+            source="insight",
+            title="Testing Assumptions",
+            question="What if I am wrong?",
+            action="challenge",
+            citations=[
+                {
+                    "passage_id": "abc",
+                    "chapter": "Ch 2",
+                    "snippet": "Short snippet.",
+                    "extra": "ignored",
+                }
+            ],
+        )
+        assert rec["title"] == "Testing Assumptions"
+        assert rec["question"] == "What if I am wrong?"
+        assert rec["action"] == "challenge"
+        assert rec["citations"] == [
+            {"passage_id": "abc", "chapter": "Ch 2", "snippet": "Short snippet."}
+        ]
+
+
+def test_save_memory_sanitizes_citation_snippet_length() -> None:
+    with TemporaryDirectory() as td:
+        root = Path(td)
+        long_snippet = "x" * 1200
+        rec = save_memory(
+            root,
+            "b1",
+            "Answer.",
+            citations=[{"passage_id": "p1", "chapter": "Intro", "snippet": long_snippet}],
+        )
+        assert len(rec["citations"][0]["snippet"]) == 1000

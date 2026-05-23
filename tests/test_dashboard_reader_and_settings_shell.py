@@ -138,7 +138,7 @@ class DashboardShellTests(unittest.TestCase):
         self.assertIn("bookChatAction", html)
         self.assertIn("use_model: true", html)
         self.assertIn("model: 'gpt-5.5'", html)
-        self.assertIn("action: state.bookChatAction", html)
+        self.assertIn("const action = state.bookChatAction || 'answer';", html)
         self.assertIn("Reading passages and asking GPT-5.5", html)
         self.assertIn("GPT-5.5 answer ready", html)
 
@@ -156,6 +156,30 @@ class DashboardShellTests(unittest.TestCase):
             "No saved insights yet. Save an answer to keep it with this book.",
             html,
         )
+
+    def test_book_chat_insight_detail_modal_and_citation_helpers(self) -> None:
+        html = DASHBOARD.read_text(encoding="utf-8")
+        self.assertIn('id="bookChatSavedInsightsSection"', html)
+        self.assertNotIn('id="bookChatSavedInsightsSection" open', html)
+        self.assertIn('id="bookChatInsightModal"', html)
+        self.assertIn('id="bookChatInsightModalTitle"', html)
+        self.assertIn('id="bookChatInsightModalCitations"', html)
+        self.assertIn('id="bookChatInsightModalClose"', html)
+        self.assertIn("function buildBookChatInsightTitle(", html)
+        self.assertIn("function openBookChatInsightModal(", html)
+        self.assertIn("function closeBookChatInsightModal(", html)
+        self.assertIn("function renderBookChatInsightModal(", html)
+        self.assertIn("function renderBookChatCitationButton(", html)
+        self.assertIn("function openBookChatPassageCitation(", html)
+        self.assertIn("function findReaderTocHrefForCitation(", html)
+        self.assertIn("bookChatReturnContext", html)
+        self.assertIn("pendingBookChatInsightModalId", html)
+        self.assertIn("bookChatLastQuestion", html)
+        self.assertIn("bookChatLastCitations", html)
+        self.assertIn("title:", html)
+        self.assertIn("question:", html)
+        self.assertIn("action:", html)
+        self.assertIn("citations:", html)
 
     def test_audiobook_chapter_labels_use_api_one_based_index(self) -> None:
         """run.chapters[].index is already 1-based; do not add 1 for display or mini-player hints."""

@@ -175,6 +175,51 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
         st_get2, body2 = self._get_json(f"/api/library/book-chat/memory?book_id={book_id}")
         self.assertEqual(body2.get("memories"), [])
 
+    def test_book_chat_memory_post_with_metadata(self) -> None:
+        book_id = "mem-meta-001"
+        citations = [
+            {
+                "passage_id": "p1",
+                "chapter": "Chapter 3",
+                "snippet": "Lead with curiosity.",
+            }
+        ]
+        st_post, saved = self._post_json(
+            "/api/library/book-chat/memory",
+            {
+                "book_id": book_id,
+                "text": "Full answer about influence.",
+                "source": "insight",
+                "title": "Influencing Difficult Coworkers",
+                "question": "How do I influence lazy coworkers?",
+                "action": "socratic",
+                "citations": citations,
+            },
+        )
+        self.assertEqual(st_post, 200)
+        memory = saved.get("memory") or {}
+        self.assertEqual(memory.get("title"), "Influencing Difficult Coworkers")
+        self.assertEqual(memory.get("question"), "How do I influence lazy coworkers?")
+        self.assertEqual(memory.get("action"), "socratic")
+        self.assertEqual(memory.get("citations"), citations)
+
+        st_get, body = self._get_json(f"/api/library/book-chat/memory?book_id={book_id}")
+        self.assertEqual(len(body.get("memories") or []), 1)
+        got = body["memories"][0]
+        self.assertEqual(got.get("title"), "Influencing Difficult Coworkers")
+        self.assertEqual(got.get("question"), "How do I influence lazy coworkers?")
+        self.assertEqual(got.get("action"), "socratic")
+        self.assertEqual(got.get("citations"), citations)
+
+        st_min, saved_min = self._post_json(
+            "/api/library/book-chat/memory",
+            {"book_id": book_id, "text": "Minimal memory.", "source": "user"},
+        )
+        self.assertEqual(st_min, 200)
+        minimal = saved_min.get("memory") or {}
+        self.assertEqual(minimal.get("text"), "Minimal memory.")
+        self.assertNotIn("title", minimal)
+
     def test_book_chat_memory_post_requires_fields(self) -> None:
         st, body = self._post_json("/api/library/book-chat/memory", {})
         self.assertEqual(st, 400)

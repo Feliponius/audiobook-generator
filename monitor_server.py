@@ -2248,6 +2248,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "missing text"}, status=400)
                 return
             source = body.get("source") or "user"
+            title = body.get("title")
+            question = body.get("question")
+            action = body.get("action")
+            citations = body.get("citations")
             from book_chat.memory_store import save_memory
 
             try:
@@ -2256,6 +2260,10 @@ class Handler(BaseHTTPRequestHandler):
                     book_id.strip(),
                     text,
                     source=str(source),
+                    title=title if isinstance(title, str) else None,
+                    question=question if isinstance(question, str) else None,
+                    action=action if isinstance(action, str) else None,
+                    citations=citations if isinstance(citations, list) else None,
                 )
             except ValueError as exc:
                 self._send_json({"error": str(exc)}, status=400)

@@ -712,6 +712,14 @@
       background: var(--surface2);
       padding: 10px 12px;
       font-size: 0.84rem;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+    }
+    .book-chat-citation:hover {
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
     }
     .book-chat-citation .chapter {
       font-weight: 600;
@@ -803,12 +811,121 @@
       flex-direction: column;
       gap: 8px;
     }
-    .book-chat-saved-text {
+    .book-chat-saved-title-btn {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      line-height: 1.35;
+      padding: 0;
+      cursor: pointer;
+    }
+    .book-chat-saved-title-btn:hover {
+      color: var(--accent);
+    }
+    .book-chat-saved-preview {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+    #bookChatInsightModal {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 0;
+      background: color-mix(in srgb, var(--bg0) 72%, transparent);
+      backdrop-filter: blur(4px);
+    }
+    #bookChatInsightModal.hidden {
+      display: none;
+    }
+    .book-chat-insight-modal-panel {
+      width: min(720px, 100%);
+      max-height: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+    }
+    @media (max-width: 640px) {
+      #bookChatInsightModal {
+        padding: 0;
+      }
+      .book-chat-insight-modal-panel {
+        width: 100%;
+        min-height: 100%;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+    }
+    @media (min-width: 641px) {
+      #bookChatInsightModal {
+        padding: 24px 16px;
+      }
+      .book-chat-insight-modal-panel {
+        border-radius: 16px;
+        margin: auto 0;
+        max-height: calc(100vh - 48px);
+      }
+    }
+    .book-chat-insight-modal-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .book-chat-insight-modal-body {
+      overflow: auto;
+      padding: 12px 14px 16px;
+      flex: 1;
+      min-height: 0;
+    }
+    #bookChatInsightModalAnswer {
       white-space: pre-wrap;
       word-break: break-word;
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+    #bookChatInsightModalQuestion {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      font-size: 0.86rem;
       line-height: 1.4;
-      max-height: 8.5em;
-      overflow: auto;
+    }
+    #bookChatInsightModalCitations {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #bookChatInsightModalClose {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      background: var(--chip-bg);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: inherit;
     }
     .book-chat-saved-meta {
       font-size: 0.76rem;
@@ -1599,10 +1716,27 @@
         <button type="button" data-book-chat-action="practice">Turn this into a practice exercise</button>
         <button type="button" data-book-chat-action="save" id="bookChatSaveInsight">Save this insight</button>
       </div>
-      <details class="book-chat-saved" id="bookChatSavedInsightsSection" open>
+      <details class="book-chat-saved" id="bookChatSavedInsightsSection">
         <summary>Saved insights <span id="bookChatSavedInsightsCount">0</span></summary>
         <div id="bookChatSavedInsightsList" class="book-chat-saved-empty">No saved insights yet. Save an answer to keep it with this book.</div>
       </details>
+    </div>
+  </div>
+
+  <div id="bookChatInsightModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="bookChatInsightModalTitle">
+    <div class="book-chat-insight-modal-panel">
+      <div class="book-chat-insight-modal-head">
+        <div style="flex:1;min-width:0">
+          <h2 id="bookChatInsightModalTitle" style="margin:0;font-size:1.05rem;line-height:1.3">Saved insight</h2>
+          <p id="bookChatInsightModalMeta" class="muted" style="margin:4px 0 0;font-size:0.78rem"></p>
+        </div>
+        <button type="button" id="bookChatInsightModalClose">Close</button>
+      </div>
+      <div class="book-chat-insight-modal-body">
+        <p id="bookChatInsightModalQuestion" class="hidden"></p>
+        <div id="bookChatInsightModalAnswer"></div>
+        <div id="bookChatInsightModalCitations" aria-label="Passages"></div>
+      </div>
     </div>
   </div>
 
@@ -1755,10 +1889,15 @@
       filter: 'all',
       currentBookId: null,
       bookChatLastAnswer: '',
+      bookChatLastQuestion: '',
+      bookChatLastAction: 'answer',
+      bookChatLastCitations: [],
       bookChatIndexed: false,
       bookChatIndexPollTimer: null,
       bookChatAction: 'answer',
       bookChatSavedInsights: [],
+      bookChatReturnContext: null,
+      pendingBookChatInsightModalId: null,
       poll: null,
       rendition: null,
       readerEpubBook: null,
@@ -2434,23 +2573,181 @@
       practice: 'Turn this into a practice exercise about: ',
     };
 
+    const BOOK_CHAT_TITLE_STOP = new Set([
+      'a', 'an', 'the', 'how', 'what', 'when', 'where', 'why', 'who', 'can', 'could',
+      'would', 'should', 'do', 'does', 'did', 'is', 'are', 'was', 'were', 'be', 'been',
+      'being', 'have', 'has', 'had', 'i', 'me', 'my', 'we', 'our', 'you', 'your', 'about',
+      'this', 'that', 'these', 'those', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'from',
+      'and', 'or', 'but', 'if', 'it', 'its', 'tell', 'give', 'help', 'please',
+    ]);
+
+    const BOOK_CHAT_TITLE_PHRASES = [
+      { keys: ['difficult', 'coworker'], title: 'Influencing Difficult Coworkers' },
+      { keys: ['lazy', 'coworker'], title: 'Influencing Difficult Coworkers' },
+      { keys: ['coworker', 'influence'], title: 'Influencing Difficult Coworkers' },
+      { keys: ['authority', 'cooperation'], title: 'Building Cooperation Without Authority' },
+      { keys: ['authority', 'without'], title: 'Building Cooperation Without Authority' },
+      { keys: ['assumption'], title: 'Testing Assumptions About Workload' },
+      { keys: ['boundary', 'follow'], title: 'Boundaries and Follow-Through' },
+      { keys: ['boundary'], title: 'Boundaries and Follow-Through' },
+      { keys: ['cooperation'], title: 'Building Cooperation' },
+      { keys: ['influence'], title: 'Influence and Persuasion' },
+      { keys: ['practice'], title: 'Practice Exercise' },
+    ];
+
+    function titleCaseWords(words) {
+      return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+
+    function firstAnswerHeading(answer) {
+      const text = String(answer || '').trim();
+      if (!text) return '';
+      const line = text.split(/\n/).map((l) => l.trim()).find(Boolean) || '';
+      const heading = line.replace(/^#+\s*/, '').replace(/^\*\*|\*\*$/g, '').trim();
+      if (!heading || heading.length > 56) return '';
+      return heading.slice(0, 56);
+    }
+
+    function buildBookChatInsightTitle(question, answer, action) {
+      const q = String(question || '').toLowerCase();
+      const words = q.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(Boolean);
+      for (const rule of BOOK_CHAT_TITLE_PHRASES) {
+        if (rule.keys.every((k) => q.includes(k))) return rule.title;
+      }
+      const meaningful = words.filter((w) => !BOOK_CHAT_TITLE_STOP.has(w));
+      if (meaningful.length >= 2) {
+        const picked = meaningful.slice(0, 5);
+        const built = titleCaseWords(picked);
+        if (built.length <= 56) return built;
+        return built.slice(0, 53).trim() + '…';
+      }
+      const fromAnswer = firstAnswerHeading(answer);
+      if (fromAnswer) return fromAnswer;
+      if (action && action !== 'answer') {
+        const actionTitle = titleCaseWords(String(action).split(/[_\s-]+/).filter(Boolean));
+        if (actionTitle) return actionTitle;
+      }
+      return 'Saved Book Insight';
+    }
+
+    function bookChatInsightDisplayTitle(memory) {
+      if (memory && memory.title) return memory.title;
+      if (memory && memory.question) {
+        return buildBookChatInsightTitle(memory.question, memory.text, memory.action);
+      }
+      const text = (memory && memory.text) || '';
+      const preview = text.replace(/\s+/g, ' ').trim();
+      if (!preview) return 'Saved Book Insight';
+      return preview.length > 56 ? preview.slice(0, 53).trim() + '…' : preview;
+    }
+
+    function normalizeCitationChapterLabel(value) {
+      return String(value || '')
+        .toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function findReaderTocHrefForCitation(flat, citation) {
+      if (!flat || !flat.length || !citation) return null;
+      const chapter = normalizeCitationChapterLabel(citation.chapter);
+      if (!chapter) return null;
+      for (const item of flat) {
+        const label = normalizeCitationChapterLabel(item.label);
+        if (!label) continue;
+        if (label.includes(chapter) || chapter.includes(label)) return item.href;
+      }
+      return null;
+    }
+
+    function renderBookChatCitationButton(citation, opts) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'book-chat-citation';
+      const chapter = document.createElement('div');
+      chapter.className = 'chapter';
+      chapter.textContent = (citation && citation.chapter) || 'Passage';
+      const text = document.createElement('div');
+      text.textContent = (citation && (citation.snippet || citation.text)) || '';
+      btn.appendChild(chapter);
+      btn.appendChild(text);
+      btn.addEventListener('click', () => {
+        openBookChatPassageCitation(citation, opts || {});
+      });
+      return btn;
+    }
+
+    async function openBookChatPassageCitation(citation, opts) {
+      const bookId = state.currentBookId;
+      if (!bookId || !citation) return;
+      closeBookChatInsightModal();
+      const returnMemoryId = opts && opts.returnMemoryId ? opts.returnMemoryId : null;
+      state.bookChatReturnContext = {
+        bookId,
+        memoryId: returnMemoryId,
+        citation,
+      };
+      try {
+        await openReader(bookId, { citation });
+      } catch (e) {
+        state.bookChatReturnContext = null;
+        showToast(e.message || String(e));
+      }
+    }
+
     function renderBookChatCitations(citations) {
       const box = $('bookChatCitations');
       box.innerHTML = '';
       const items = citations || [];
       if (!items.length) return;
       for (const c of items) {
-        const card = document.createElement('div');
-        card.className = 'book-chat-citation';
-        const chapter = document.createElement('div');
-        chapter.className = 'chapter';
-        chapter.textContent = c.chapter || 'Passage';
-        const text = document.createElement('div');
-        text.textContent = c.snippet || c.text || '';
-        card.appendChild(chapter);
-        card.appendChild(text);
-        box.appendChild(card);
+        box.appendChild(renderBookChatCitationButton(c, { returnMemoryId: null }));
       }
+    }
+
+    function closeBookChatInsightModal() {
+      const modal = $('bookChatInsightModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function renderBookChatInsightModal(memory) {
+      if (!memory) return;
+      $('bookChatInsightModalTitle').textContent = bookChatInsightDisplayTitle(memory);
+      const metaBits = [];
+      if (memory.source) metaBits.push(memory.source);
+      if (memory.action) metaBits.push(memory.action);
+      const when = formatBookChatSavedInsightWhen(memory.created_at);
+      if (when) metaBits.push(when);
+      $('bookChatInsightModalMeta').textContent = metaBits.join(' · ');
+      const qEl = $('bookChatInsightModalQuestion');
+      const question = (memory.question || '').trim();
+      if (question) {
+        qEl.textContent = question;
+        qEl.classList.remove('hidden');
+      } else {
+        qEl.textContent = '';
+        qEl.classList.add('hidden');
+      }
+      $('bookChatInsightModalAnswer').textContent = memory.text || '';
+      const citeBox = $('bookChatInsightModalCitations');
+      citeBox.innerHTML = '';
+      const citations = memory.citations || [];
+      if (!citations.length) return;
+      for (const c of citations) {
+        citeBox.appendChild(
+          renderBookChatCitationButton(c, { returnMemoryId: memory.memory_id || null })
+        );
+      }
+    }
+
+    function openBookChatInsightModal(memoryId) {
+      const memory = (state.bookChatSavedInsights || []).find(
+        (m) => m && m.memory_id === memoryId
+      );
+      if (!memory) return;
+      renderBookChatInsightModal(memory);
+      $('bookChatInsightModal').classList.remove('hidden');
     }
 
     function setBookChatIndexUi(indexed, passageCount) {
@@ -2643,20 +2940,24 @@
       status.textContent = 'Reading passages and asking GPT-5.5…';
       sendBtn.disabled = true;
       try {
+        const action = state.bookChatAction || 'answer';
         const data = await fetchJson('/api/library/book-chat/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             book_id: id,
             question,
-            action: state.bookChatAction || 'answer',
+            action,
             use_model: true,
             model: 'gpt-5.5',
           }),
         });
+        state.bookChatLastQuestion = question;
+        state.bookChatLastAction = data.action || action;
         state.bookChatLastAnswer = data.answer || '';
+        state.bookChatLastCitations = data.citations || [];
         $('bookChatAnswer').textContent = state.bookChatLastAnswer || 'No answer returned.';
-        renderBookChatCitations(data.citations);
+        renderBookChatCitations(state.bookChatLastCitations);
         status.textContent = data.fallback_used
           ? 'Answer ready (retrieval fallback)'
           : 'GPT-5.5 answer ready';
@@ -2707,13 +3008,24 @@
       for (const mem of sorted) {
         const item = document.createElement('article');
         item.className = 'book-chat-saved-item';
-        const textEl = document.createElement('div');
-        textEl.className = 'book-chat-saved-text';
-        textEl.textContent = (mem && mem.text) || '';
+        const titleBtn = document.createElement('button');
+        titleBtn.type = 'button';
+        titleBtn.className = 'book-chat-saved-title-btn';
+        titleBtn.textContent = bookChatInsightDisplayTitle(mem);
+        const memoryId = mem && mem.memory_id;
+        titleBtn.addEventListener('click', () => {
+          if (!memoryId) return;
+          openBookChatInsightModal(memoryId);
+        });
+        const previewEl = document.createElement('div');
+        previewEl.className = 'book-chat-saved-preview';
+        const previewSource = (mem && mem.text) || '';
+        previewEl.textContent = previewSource.replace(/\s+/g, ' ').trim();
         const metaEl = document.createElement('div');
         metaEl.className = 'book-chat-saved-meta';
         const metaBits = [];
         if (mem && mem.source) metaBits.push(mem.source);
+        if (mem && mem.action) metaBits.push(mem.action);
         const when = formatBookChatSavedInsightWhen(mem && mem.created_at);
         if (when) metaBits.push(when);
         metaEl.textContent = metaBits.join(' · ');
@@ -2722,14 +3034,14 @@
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.textContent = 'Delete';
-        const memoryId = mem && mem.memory_id;
         const bookId = state.currentBookId;
         delBtn.addEventListener('click', () => {
           if (!bookId || !memoryId) return;
           deleteBookChatSavedInsight(bookId, memoryId).catch(e => showToast(e.message || String(e)));
         });
         actions.appendChild(delBtn);
-        item.appendChild(textEl);
+        item.appendChild(titleBtn);
+        if (previewEl.textContent) item.appendChild(previewEl);
         item.appendChild(metaEl);
         item.appendChild(actions);
         listEl.appendChild(item);
@@ -2742,6 +3054,11 @@
         '/api/library/book-chat/memory?book_id=' + encodeURIComponent(bookId)
       );
       renderBookChatSavedInsights(data.memories || []);
+      if (state.pendingBookChatInsightModalId) {
+        const pendingId = state.pendingBookChatInsightModalId;
+        state.pendingBookChatInsightModalId = null;
+        openBookChatInsightModal(pendingId);
+      }
     }
 
     async function deleteBookChatSavedInsight(bookId, memoryId) {
@@ -2763,11 +3080,23 @@
         showToast('Nothing to save yet');
         return;
       }
+      const question = (state.bookChatLastQuestion || ($('bookChatQuestion').value || '')).trim();
+      const action = state.bookChatLastAction || state.bookChatAction || 'answer';
+      const citations = state.bookChatLastCitations || [];
+      const title = buildBookChatInsightTitle(question, text, action);
       try {
         await fetchJson('/api/library/book-chat/memory', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ book_id: id, text, source: 'insight' }),
+          body: JSON.stringify({
+            book_id: id,
+            text,
+            source: 'insight',
+            title: title,
+            question: question,
+            action: action,
+            citations: citations,
+          }),
         });
         showToast('Insight saved');
         await loadBookChatSavedInsights(id);
@@ -2799,10 +3128,21 @@
       });
     }
 
+    function initBookChatInsightModal() {
+      const closeBtn = $('bookChatInsightModalClose');
+      if (!closeBtn || closeBtn.getAttribute('data-bound') === '1') return;
+      closeBtn.setAttribute('data-bound', '1');
+      closeBtn.addEventListener('click', () => closeBookChatInsightModal());
+    }
+
     async function openBookChatScreen(id) {
       stopBookChatIndexPolling();
+      closeBookChatInsightModal();
       state.currentBookId = id;
       state.bookChatLastAnswer = '';
+      state.bookChatLastQuestion = '';
+      state.bookChatLastAction = 'answer';
+      state.bookChatLastCitations = [];
       state.bookChatIndexed = false;
       state.bookChatAction = 'answer';
       $('bookChatQuestion').value = '';
@@ -2810,6 +3150,7 @@
       $('bookChatCitations').innerHTML = '';
       $('bookChatStatus').textContent = '';
       setBookChatActionUi('answer');
+      initBookChatInsightModal();
       $('bookChatIndexBtn').classList.add('hidden');
       $('bookChatIndexStatus').textContent = 'Checking passage index…';
       initBookChatQuickActions();
@@ -2822,10 +3163,6 @@
       setBookChatActionUi(state.bookChatAction);
       $('bookChatSendBtn').onclick = () => sendBookChatQuery().catch(e => showToast(e.message || String(e)));
       $('bookChatIndexBtn').onclick = () => runBookChatAutoIndex(id).catch(e => showToast(e.message || String(e)));
-      $('bookChatSaveInsight').onclick = (ev) => {
-        ev.preventDefault();
-        saveBookChatInsight().catch(e => showToast(e.message || String(e)));
-      };
       refreshBookChatIndexStatus(id).catch((e) => {
         state.bookChatIndexed = false;
         $('bookChatIndexStatus').textContent = 'Could not check index status. You can still try indexing this book.';
@@ -3934,7 +4271,8 @@
       $('readerScreen').setAttribute('data-reading-theme', t);
     }
 
-    async function openReader(id) {
+    async function openReader(id, opts) {
+      opts = opts || {};
       state.currentBookId = id;
       state.lastReaderCfi = null;
       state.lastReaderHint = null;
@@ -3989,7 +4327,7 @@
       });
       registerEpubReadingThemes(state.rendition);
       selectEpubReadingTheme(state.rendition, surfaceTheme);
-      if (b.read_cfi) {
+      if (b.read_cfi && !opts.citation) {
         await state.rendition.display(b.read_cfi).catch(() => state.rendition.display());
       } else {
         await state.rendition.display();
@@ -3999,6 +4337,14 @@
       } catch (_) {}
       const tocRoot = book.navigation && book.navigation.toc;
       const flat = flattenToc(tocRoot || []);
+      if (opts.citation) {
+        const citeHref = findReaderTocHrefForCitation(flat, opts.citation);
+        if (citeHref && state.rendition) {
+          await state.rendition.display(citeHref).catch(() => {});
+        } else {
+          showToast('Opened reader; exact passage location is not available yet');
+        }
+      }
       for (const item of flat) {
         const row = document.createElement('button');
         row.type = 'button';
@@ -4143,6 +4489,16 @@
     initPlayerChrome();
 
     $('readerBack').addEventListener('click', () => {
+      const ctx = state.bookChatReturnContext;
+      if (ctx && ctx.bookId) {
+        const bookId = ctx.bookId;
+        const memoryId = ctx.memoryId || null;
+        state.bookChatReturnContext = null;
+        hideReader();
+        if (memoryId) state.pendingBookChatInsightModalId = memoryId;
+        navigate({ name: 'bookchat', id: bookId });
+        return;
+      }
       if (state.currentBookId) navigate({ name: 'book', id: state.currentBookId });
       else navigate({ name: 'library' });
     });
