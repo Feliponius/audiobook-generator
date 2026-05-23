@@ -117,3 +117,36 @@ def test_index_passages_replaces_existing_index(workspace: Path) -> None:
     stored = read_passages(index_path_for_book(workspace, "book-1"))
     assert len(stored) == 1
     assert stored[0]["text"] == "two only"
+
+
+def test_index_passages_emits_progress_callback(workspace: Path) -> None:
+    embedder = FakeHashEmbedder(dimension=8)
+    events: list[dict] = []
+
+    def on_progress(data: dict) -> None:
+        events.append(dict(data))
+
+    index_passages(
+        workspace,
+        "book-1",
+        [
+            {"chapter": "Intro", "text": "First passage."},
+            {"chapter": "Ch2", "text": "Second passage."},
+            {"chapter": "Ch3", "text": "Third passage."},
+        ],
+        embedder=embedder,
+        progress_callback=on_progress,
+    )
+    stages = [e.get("stage") for e in events]
+    assert "embedding" in stages
+    assert "saving" in stages
+    assert "complete" in stages
+
+    embed_events = [e for e in events if e.get("stage") == "embedding"]
+    assert embed_events
+    assert embed_events[-1]["current"] == embed_events[-1]["total"] == 3
+    assert embed_events[-1]["percent"] == 100
+
+    complete_events = [e for e in events if e.get("stage") == "complete"]
+    assert complete_events
+    assert complete_events[-1]["percent"] == 100

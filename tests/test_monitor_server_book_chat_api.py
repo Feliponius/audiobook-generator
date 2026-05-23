@@ -244,6 +244,74 @@ class MonitorServerBookChatAPITests(unittest.TestCase):
             msg=cite_text,
         )
 
+    def test_book_chat_index_job_returns_quickly_and_completes(self) -> None:
+        book_id = "index-job-epub-001"
+        uploads = self.root / "library" / "uploads" / book_id
+        uploads.mkdir(parents=True, exist_ok=True)
+        epub_path = uploads / "book.epub"
+        write_tiny_epub(
+            epub_path,
+            [("Chapter One", "Discipline grows through small daily steps.")],
+        )
+        self._seed_catalog_book_with_epub(book_id, epub_path)
+
+        st_post, job = self._post_json(
+            "/api/library/book-chat/index-job",
+            {"book_id": book_id},
+        )
+        self.assertEqual(st_post, 200)
+        self.assertTrue(job.get("ok"))
+        self.assertEqual(job.get("book_id"), book_id)
+        self.assertIn(job.get("status"), ("running", "done"))
+
+        for _ in range(50):
+            st_get, status = self._get_json(
+                f"/api/library/book-chat/index-job-status?book_id={book_id}"
+            )
+            self.assertEqual(st_get, 200)
+            if status.get("status") == "done" and status.get("percent") == 100:
+                break
+        else:
+            self.fail(f"index job did not complete: {status}")
+
+        self.assertGreater(status.get("passage_count", 0), 0)
+        st_idx, idx = self._get_json(f"/api/library/book-chat/index-status?book_id={book_id}")
+        self.assertTrue(idx.get("indexed"))
+        self.assertEqual(st_idx, 200)
+
+    def test_book_chat_index_job_duplicate_post_while_running(self) -> None:
+        from book_chat.index_job import default_job_status, write_index_job
+
+        book_id = "index-job-running-001"
+        uploads = self.root / "library" / "uploads" / book_id
+        uploads.mkdir(parents=True, exist_ok=True)
+        epub_path = uploads / "book.epub"
+        write_tiny_epub(epub_path, [("Ch1", "Some text for indexing.")])
+        self._seed_catalog_book_with_epub(book_id, epub_path)
+
+        running = default_job_status(self.root, book_id)
+        running.update(
+            {
+                "status": "running",
+                "stage": "embedding",
+                "message": "Embedding passages 1 / 10",
+                "current": 1,
+                "total": 10,
+                "percent": 10,
+                "started_at": "2026-05-23T12:00:00+00:00",
+                "updated_at": "2026-05-23T12:00:01+00:00",
+            }
+        )
+        write_index_job(self.root, book_id, running)
+
+        st_post, job = self._post_json(
+            "/api/library/book-chat/index-job",
+            {"book_id": book_id},
+        )
+        self.assertEqual(st_post, 200)
+        self.assertEqual(job.get("status"), "running")
+        self.assertEqual(job.get("started_at"), "2026-05-23T12:00:00+00:00")
+
 
 if __name__ == "__main__":
     unittest.main()

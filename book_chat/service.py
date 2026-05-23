@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+
+ProgressCallback = Callable[[dict[str, Any]], None]
 
 from book_chat.embeddings import DEFAULT_BGE_MODEL, LocalBGEEmbedder, TextEmbedder
 from book_chat.index_store import index_path_for_book, read_passages, retrieve_top_k, write_passages
@@ -45,6 +48,28 @@ def get_index_status(root: Path, book_id: str) -> dict[str, Any]:
     }
 
 
+def _emit_progress(
+    progress_callback: ProgressCallback | None,
+    *,
+    stage: str,
+    message: str,
+    current: int = 0,
+    total: int = 0,
+) -> None:
+    if progress_callback is None:
+        return
+    percent = 0 if total <= 0 else min(100, int(current * 100 / total))
+    progress_callback(
+        {
+            "stage": stage,
+            "message": message,
+            "current": current,
+            "total": total,
+            "percent": percent,
+        }
+    )
+
+
 def auto_index_book_epub(
     root: Path,
     book_id: str,
@@ -52,6 +77,7 @@ def auto_index_book_epub(
     *,
     force: bool = False,
     embedder: TextEmbedder | None = None,
+    progress_callback: ProgressCallback | None = None,
 ) -> dict[str, Any]:
     status = get_index_status(root, book_id)
     if status.get("indexed") and not force:
@@ -61,6 +87,9 @@ def auto_index_book_epub(
 
     from book_chat.epub_extractor import passages_from_chapters
 
+    _emit_progress(progress_callback, stage="preparing", message="Preparing EPUB…")
+    _emit_progress(progress_callback, stage="extracting", message="Extracting chapters…")
+
     try:
         book_title, chapters = extract_chapters(epub_path)
         raw_passages = passages_from_chapters(chapters)
@@ -69,7 +98,15 @@ def auto_index_book_epub(
     if not raw_passages:
         raise BookChatExtractionError("No passages extracted from EPUB")
 
-    result = index_passages(root, book_id, raw_passages, embedder=embedder)
+    _emit_progress(progress_callback, stage="chunking", message="Chunking passages…")
+
+    result = index_passages(
+        root,
+        book_id,
+        raw_passages,
+        embedder=embedder,
+        progress_callback=progress_callback,
+    )
     result["status"] = "indexed"
     result["book_title"] = book_title
     return result
@@ -89,14 +126,30 @@ def index_passages(
     raw_passages: list[dict[str, Any]],
     *,
     embedder: TextEmbedder | None = None,
+    progress_callback: ProgressCallback | None = None,
 ) -> dict[str, Any]:
     emb = embedder or _default_embedder()
+    usable = [
+        item
+        for item in raw_passages
+        if isinstance(item, dict) and str(item.get("text") or "").strip()
+    ]
+    total = len(usable)
     records: list[dict[str, Any]] = []
+    embedded = 0
     for i, item in enumerate(raw_passages):
         chapter = str(item.get("chapter") or "").strip()
         text = str(item.get("text") or "").strip()
         if not text:
             continue
+        embedded += 1
+        _emit_progress(
+            progress_callback,
+            stage="embedding",
+            message=f"Embedding passages {embedded} / {total}…",
+            current=embedded,
+            total=total,
+        )
         records.append(
             {
                 "id": _passage_id(book_id, i),
@@ -107,13 +160,22 @@ def index_passages(
                 "embedding": emb.embed(text),
             }
         )
+    _emit_progress(progress_callback, stage="saving", message="Saving index…")
     path = index_path_for_book(root, book_id)
     write_passages(path, records)
+    count = len(records)
+    _emit_progress(
+        progress_callback,
+        stage="complete",
+        message=f"Passage index ready ({count} passages)",
+        current=count,
+        total=count,
+    )
     return {
         "ok": True,
         "book_id": book_id,
         "status": "indexed",
-        "passage_count": len(records),
+        "passage_count": count,
         "embedding_model": emb.model_name,
     }
 

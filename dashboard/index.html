@@ -739,6 +739,27 @@
       color: var(--muted);
       min-height: 1.2em;
     }
+    .book-chat-progress {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .book-chat-progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #fff));
+      transition: width 0.35s ease;
+    }
+    .book-chat-progress-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0;
+      min-height: 1.1em;
+    }
 
     .bottom-nav {
       position: fixed;
@@ -1492,6 +1513,10 @@
     <p class="muted" id="bookChatSubtitle" style="margin:0 0 12px;font-size:0.86rem">Ask questions about indexed passages for this book.</p>
     <div id="bookChatPanel" class="book-chat-panel">
       <p class="book-chat-status" id="bookChatIndexStatus" aria-live="polite">Checking passage index…</p>
+      <div class="book-chat-progress hidden" id="bookChatIndexProgress" aria-hidden="true">
+        <div class="book-chat-progress-bar" id="bookChatIndexProgressBar"></div>
+      </div>
+      <p class="book-chat-progress-label hidden" id="bookChatIndexProgressLabel"></p>
       <button type="button" class="btn-secondary hidden" id="bookChatIndexBtn" style="width:100%;margin-bottom:8px">Index this book</button>
       <textarea id="bookChatQuestion" placeholder="Ask about this book…" rows="3"></textarea>
       <button type="button" class="btn-primary" id="bookChatSendBtn" style="width:100%">Send</button>
@@ -1659,6 +1684,7 @@
       currentBookId: null,
       bookChatLastAnswer: '',
       bookChatIndexed: false,
+      bookChatIndexPollTimer: null,
       poll: null,
       rendition: null,
       readerEpubBook: null,
@@ -2336,19 +2362,112 @@
         indexBtn.classList.add('hidden');
         sendBtn.disabled = false;
       } else {
-        indexStatus.textContent = 'No passage index yet. Tap Index this book once; first indexing can take several minutes.';
+        indexStatus.textContent = 'No passage index yet. Tap Index this book to build a passage index in the background.';
         indexBtn.classList.remove('hidden');
         sendBtn.disabled = false;
       }
     }
 
+    function renderBookChatIndexJob(job) {
+      const progress = $('bookChatIndexProgress');
+      const bar = $('bookChatIndexProgressBar');
+      const label = $('bookChatIndexProgressLabel');
+      const indexStatus = $('bookChatIndexStatus');
+      const indexBtn = $('bookChatIndexBtn');
+      if (!progress || !bar || !label) return;
+
+      const status = (job && job.status) || 'idle';
+      const percent = Math.max(0, Math.min(100, Number(job && job.percent) || 0));
+      const message = (job && job.message) || '';
+      const running = status === 'running';
+
+      progress.classList.toggle('hidden', !running);
+      progress.setAttribute('aria-hidden', running ? 'false' : 'true');
+      label.classList.toggle('hidden', !running && status !== 'error');
+      bar.style.width = running || status === 'done' ? percent + '%' : '0%';
+
+      if (running) {
+        label.textContent = message || 'Indexing…';
+        indexStatus.textContent = message || 'Indexing passages…';
+        indexBtn.classList.add('hidden');
+        indexBtn.disabled = true;
+        return;
+      }
+
+      label.textContent = '';
+      if (status === 'error') {
+        label.classList.remove('hidden');
+        label.textContent = message || (job && job.error) || 'Indexing failed';
+        indexStatus.textContent = label.textContent;
+        indexBtn.classList.remove('hidden');
+        indexBtn.disabled = false;
+        return;
+      }
+
+      if (status === 'done') {
+        progress.classList.add('hidden');
+        progress.setAttribute('aria-hidden', 'true');
+        label.classList.add('hidden');
+        const count = (job && job.passage_count) || (job && job.current) || 0;
+        setBookChatIndexUi(true, count);
+        return;
+      }
+
+      if (status === 'idle') {
+        indexBtn.disabled = false;
+      }
+    }
+
+    function stopBookChatIndexPolling() {
+      if (state.bookChatIndexPollTimer) {
+        clearInterval(state.bookChatIndexPollTimer);
+        state.bookChatIndexPollTimer = null;
+      }
+    }
+
+    function startBookChatIndexPolling(bookId) {
+      stopBookChatIndexPolling();
+      const poll = async () => {
+        try {
+          const job = await fetchJson(
+            '/api/library/book-chat/index-job-status?book_id=' + encodeURIComponent(bookId)
+          );
+          renderBookChatIndexJob(job);
+          if (job.status === 'done') {
+            stopBookChatIndexPolling();
+            showToast('Book indexed for chat');
+          } else if (job.status === 'error') {
+            stopBookChatIndexPolling();
+            showToast(job.message || job.error || 'Indexing failed');
+          }
+        } catch (e) {
+          stopBookChatIndexPolling();
+          showToast(e.message || String(e));
+        }
+      };
+      poll().catch(() => {});
+      state.bookChatIndexPollTimer = setInterval(() => {
+        poll().catch(() => {});
+      }, 1500);
+    }
+
     async function refreshBookChatIndexStatus(bookId) {
       const indexStatus = $('bookChatIndexStatus');
       indexStatus.textContent = 'Checking passage index…';
-      const data = await fetchJson(
-        '/api/library/book-chat/index-status?book_id=' + encodeURIComponent(bookId)
-      );
-      setBookChatIndexUi(data.indexed, data.passage_count || 0);
+      const [data, job] = await Promise.all([
+        fetchJson('/api/library/book-chat/index-status?book_id=' + encodeURIComponent(bookId)),
+        fetchJson('/api/library/book-chat/index-job-status?book_id=' + encodeURIComponent(bookId)),
+      ]);
+      if (job && job.status === 'running') {
+        renderBookChatIndexJob(job);
+        startBookChatIndexPolling(bookId);
+      } else if (data.indexed) {
+        setBookChatIndexUi(true, data.passage_count || 0);
+        renderBookChatIndexJob(job);
+      } else {
+        setBookChatIndexUi(false, 0);
+        renderBookChatIndexJob(job);
+      }
       return data;
     }
 
@@ -2357,22 +2476,35 @@
       const indexBtn = $('bookChatIndexBtn');
       const indexStatus = $('bookChatIndexStatus');
       indexBtn.disabled = true;
-      indexStatus.textContent = 'Indexing EPUB passages… first run can take 5–10 minutes. Please leave this screen open.';
+      indexStatus.textContent = 'Starting background indexing…';
       try {
-        const data = await fetchJson('/api/library/book-chat/auto-index', {
+        const job = await fetchJson('/api/library/book-chat/index-job', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ book_id: bookId, force: !!force }),
         });
-        setBookChatIndexUi(true, data.passage_count || 0);
-        if (data.status === 'already_indexed') {
-          showToast('Passage index already ready');
-        } else {
-          showToast('Book indexed for chat');
+        renderBookChatIndexJob(job);
+        if (job.status === 'done') {
+          setBookChatIndexUi(true, job.passage_count || job.current || 0);
+          if (job.message && job.message.indexOf('ready') >= 0) {
+            showToast('Passage index already ready');
+          } else {
+            showToast('Book indexed for chat');
+          }
+          return job;
         }
-        return data;
+        if (job.status === 'running') {
+          startBookChatIndexPolling(bookId);
+          return job;
+        }
+        if (job.status === 'error') {
+          showToast(job.message || job.error || 'Indexing failed');
+        }
+        return job;
       } finally {
-        indexBtn.disabled = false;
+        if (!state.bookChatIndexPollTimer) {
+          indexBtn.disabled = false;
+        }
       }
     }
 
@@ -2388,7 +2520,18 @@
       const sendBtn = $('bookChatSendBtn');
       if (!state.bookChatIndexed) {
         try {
-          await runBookChatAutoIndex(id);
+          const job = await fetchJson('/api/library/book-chat/index-job-status?book_id=' + encodeURIComponent(id));
+          if (job.status === 'running') {
+            startBookChatIndexPolling(id);
+            showToast('Indexing is still running. Try again in a moment.');
+            return;
+          }
+          if (job.status !== 'done') {
+            await runBookChatAutoIndex(id);
+            showToast('Indexing started. Try your question again in a moment.');
+            return;
+          }
+          setBookChatIndexUi(true, job.passage_count || job.current || 0);
         } catch (e) {
           showToast(e.message || 'Index this book before asking questions');
           return;
@@ -2460,6 +2603,7 @@
     }
 
     async function openBookChatScreen(id) {
+      stopBookChatIndexPolling();
       state.currentBookId = id;
       state.bookChatLastAnswer = '';
       state.bookChatIndexed = false;

@@ -31,6 +31,7 @@ DASHBOARD_PATH = ROOT / "dashboard" / "index.html"
 
 _book_chat_embedder_lock = threading.Lock()
 _book_chat_embedder = None
+_book_chat_index_job_lock = threading.Lock()
 
 
 def book_chat_embedder_factory():
@@ -49,6 +50,158 @@ def book_chat_embedder_factory():
 
             _book_chat_embedder = LocalBGEEmbedder()
     return _book_chat_embedder
+
+
+def resolve_book_chat_epub(root: Path, book_id: str) -> tuple[Path | None, dict | None, int]:
+    """Resolve catalog EPUB path for book chat indexing.
+
+    Returns ``(epub_path, error_payload, http_status)`` where error_payload is set on failure.
+    """
+    catalog = read_catalog(root)
+    book = next((b for b in catalog.get("books", []) if b.get("id") == book_id), None)
+    if not book:
+        return None, {"error": "book not found", "book_id": book_id}, 404
+    rel = book.get("epub_rel_path")
+    if not rel:
+        return None, {"error": "no epub", "book_id": book_id}, 404
+    epub_path = (root / rel).resolve()
+    try:
+        epub_path.relative_to(root.resolve())
+    except ValueError:
+        return None, {"error": "invalid epub path", "book_id": book_id}, 400
+    if not epub_path.is_file():
+        return None, {"error": "epub missing on disk", "book_id": book_id}, 404
+    return epub_path, None, 200
+
+
+def book_chat_index_job_status(root: Path, book_id: str) -> dict:
+    from book_chat.index_job import read_index_job
+    from book_chat.service import get_index_status
+
+    status = get_index_status(root, book_id)
+    if status.get("indexed"):
+        count = int(status.get("passage_count") or 0)
+        return {
+            "ok": True,
+            "book_id": book_id,
+            "status": "done",
+            "stage": "complete",
+            "message": f"Passage index ready ({count} passages)",
+            "current": count,
+            "total": count,
+            "percent": 100,
+            "passage_count": count,
+            "embedding_model": status.get("embedding_model"),
+            "error": None,
+        }
+    job = read_index_job(root, book_id)
+    if job.get("status") != "idle":
+        return job
+    return {
+        **job,
+        "message": job.get("message") or "No passage index yet.",
+    }
+
+
+def _run_book_chat_index_job(root: Path, book_id: str, epub_path: Path, *, force: bool) -> None:
+    from book_chat.index_job import complete_index_job, fail_index_job, update_index_job
+    from book_chat.service import BookChatExtractionError, auto_index_book_epub, get_index_status
+
+    def on_progress(data: dict) -> None:
+        fields = dict(data)
+        fields["status"] = "running"
+        update_index_job(root, book_id, **fields)
+
+    try:
+        update_index_job(
+            root,
+            book_id,
+            status="running",
+            stage="preparing",
+            message="Preparing EPUB…",
+            current=0,
+            total=0,
+            percent=0,
+            error=None,
+        )
+        result = auto_index_book_epub(
+            root,
+            book_id,
+            epub_path,
+            force=force,
+            embedder=book_chat_embedder_factory(),
+            progress_callback=on_progress,
+        )
+        if result.get("status") == "already_indexed":
+            indexed = get_index_status(root, book_id)
+            complete_index_job(
+                root,
+                book_id,
+                int(indexed.get("passage_count") or 0),
+                str(indexed.get("embedding_model") or ""),
+            )
+        else:
+            complete_index_job(
+                root,
+                book_id,
+                int(result.get("passage_count") or 0),
+                str(result.get("embedding_model") or ""),
+            )
+    except BookChatExtractionError as exc:
+        fail_index_job(root, book_id, str(exc))
+    except Exception as exc:
+        fail_index_job(root, book_id, str(exc))
+
+
+def start_book_chat_index_job(root: Path, book_id: str, *, force: bool = False) -> tuple[dict, int]:
+    from book_chat.index_job import complete_index_job, read_index_job
+    from book_chat.service import get_index_status
+
+    status = get_index_status(root, book_id)
+    if status.get("indexed") and not force:
+        count = int(status.get("passage_count") or 0)
+        payload = complete_index_job(
+            root,
+            book_id,
+            count,
+            str(status.get("embedding_model") or ""),
+        )
+        return payload, 200
+
+    job = read_index_job(root, book_id)
+    if job.get("status") == "running":
+        return job, 200
+
+    epub_path, err, http_status = resolve_book_chat_epub(root, book_id)
+    if err is not None:
+        return err, http_status
+
+    with _book_chat_index_job_lock:
+        job = read_index_job(root, book_id)
+        if job.get("status") == "running":
+            return job, 200
+        from book_chat.index_job import update_index_job
+
+        update_index_job(
+            root,
+            book_id,
+            status="running",
+            stage="preparing",
+            message="Preparing EPUB…",
+            current=0,
+            total=0,
+            percent=0,
+            error=None,
+        )
+        thread = threading.Thread(
+            target=_run_book_chat_index_job,
+            args=(root, book_id, epub_path),
+            kwargs={"force": force},
+            daemon=True,
+        )
+        thread.start()
+
+    return read_index_job(root, book_id), 200
 
 
 def resolve_library_pipeline_python(project_root: Path) -> str:
@@ -1338,6 +1491,14 @@ class Handler(BaseHTTPRequestHandler):
 
             self._send_json(get_index_status(self.root, str(book_id).strip()))
             return
+        if parsed.path == "/api/library/book-chat/index-job-status":
+            qs = parse_qs(parsed.query)
+            book_id = (qs.get("book_id") or [None])[0]
+            if not book_id or not str(book_id).strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            self._send_json(book_chat_index_job_status(self.root, str(book_id).strip()))
+            return
         if parsed.path == "/api/library/book-chat/memory":
             qs = parse_qs(parsed.query)
             book_id = (qs.get("book_id") or [None])[0]
@@ -1935,6 +2096,21 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(payload)
             return
 
+        if parsed.path == "/api/library/book-chat/index-job":
+            body = self._read_json_body()
+            if not body:
+                self._send_json({"error": "invalid json"}, status=400)
+                return
+            book_id = body.get("book_id")
+            if not isinstance(book_id, str) or not book_id.strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            book_id = book_id.strip()
+            force = bool(body.get("force"))
+            payload, http_status = start_book_chat_index_job(root, book_id, force=force)
+            self._send_json(payload, status=http_status)
+            return
+
         if parsed.path == "/api/library/book-chat/auto-index":
             body = self._read_json_body()
             if not body:
@@ -1946,23 +2122,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             book_id = book_id.strip()
             force = bool(body.get("force"))
-            catalog = read_catalog(root)
-            book = next((b for b in catalog.get("books", []) if b.get("id") == book_id), None)
-            if not book:
-                self._send_json({"error": "book not found", "book_id": book_id}, status=404)
-                return
-            rel = book.get("epub_rel_path")
-            if not rel:
-                self._send_json({"error": "no epub", "book_id": book_id}, status=404)
-                return
-            epub_path = (root / rel).resolve()
-            try:
-                epub_path.relative_to(root.resolve())
-            except ValueError:
-                self._send_json({"error": "invalid epub path", "book_id": book_id}, status=400)
-                return
-            if not epub_path.is_file():
-                self._send_json({"error": "epub missing on disk", "book_id": book_id}, status=404)
+            epub_path, err, http_status = resolve_book_chat_epub(root, book_id)
+            if err is not None:
+                self._send_json(err, status=http_status)
                 return
             from book_chat.service import BookChatExtractionError, auto_index_book_epub
 
