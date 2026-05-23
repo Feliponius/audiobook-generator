@@ -2484,7 +2484,10 @@
         saveBookChatInsight().catch(e => showToast(e.message || String(e)));
       };
       refreshBookChatIndexStatus(id).catch((e) => {
-        $('bookChatIndexStatus').textContent = 'Could not check index status';
+        state.bookChatIndexed = false;
+        $('bookChatIndexStatus').textContent = 'Could not check index status. You can still try indexing this book.';
+        $('bookChatIndexBtn').classList.remove('hidden');
+        $('bookChatSendBtn').disabled = false;
         showToast(e.message || String(e));
       });
     }
