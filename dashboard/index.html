@@ -2336,7 +2336,7 @@
         indexBtn.classList.add('hidden');
         sendBtn.disabled = false;
       } else {
-        indexStatus.textContent = 'No passage index yet. Index this book to ask questions.';
+        indexStatus.textContent = 'No passage index yet. Tap Index this book once; first indexing can take several minutes.';
         indexBtn.classList.remove('hidden');
         sendBtn.disabled = false;
       }
@@ -2357,7 +2357,7 @@
       const indexBtn = $('bookChatIndexBtn');
       const indexStatus = $('bookChatIndexStatus');
       indexBtn.disabled = true;
-      indexStatus.textContent = 'Indexing EPUB passages…';
+      indexStatus.textContent = 'Indexing EPUB passages… first run can take 5–10 minutes. Please leave this screen open.';
       try {
         const data = await fetchJson('/api/library/book-chat/auto-index', {
           method: 'POST',

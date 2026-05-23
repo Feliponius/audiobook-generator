@@ -128,6 +128,7 @@ class DashboardShellTests(unittest.TestCase):
         self.assertIn("/api/library/book-chat/index-status", html)
         self.assertIn("/api/library/book-chat/auto-index", html)
         self.assertIn("Could not check index status. You can still try indexing this book.", html)
+        self.assertIn("first run can take 5–10 minutes", html)
         self.assertIn("$('bookChatIndexBtn').classList.remove('hidden');", html)
 
     def test_audiobook_chapter_labels_use_api_one_based_index(self) -> None:

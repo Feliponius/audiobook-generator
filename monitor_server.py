@@ -29,11 +29,26 @@ ROOT = Path(__file__).resolve().parent
 DASHBOARD_PATH = ROOT / "dashboard" / "index.html"
 
 
-def book_chat_embedder_factory():
-    """Return the embedder used for book-chat index/query (overridable in tests)."""
-    from book_chat.embeddings import LocalBGEEmbedder
+_book_chat_embedder_lock = threading.Lock()
+_book_chat_embedder = None
 
-    return LocalBGEEmbedder()
+
+def book_chat_embedder_factory():
+    """Return the embedder used for book-chat index/query (overridable in tests).
+
+    The local BGE model is expensive to load, especially on first use. Keep one
+    process-wide instance so indexing/query requests do not repeatedly reload
+    weights and make the mobile UI look like indexing failed.
+    """
+    global _book_chat_embedder
+    if _book_chat_embedder is not None:
+        return _book_chat_embedder
+    with _book_chat_embedder_lock:
+        if _book_chat_embedder is None:
+            from book_chat.embeddings import LocalBGEEmbedder
+
+            _book_chat_embedder = LocalBGEEmbedder()
+    return _book_chat_embedder
 
 
 def resolve_library_pipeline_python(project_root: Path) -> str:
