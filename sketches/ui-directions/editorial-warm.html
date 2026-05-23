@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direction C · Editorial warm</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; background: #ede7dc; color: #1f1b16; }
+    .page { min-height: 100vh; display: flex; justify-content: center; padding: 18px; }
+    .phone { width: 390px; min-height: 844px; background: #fbf7ef; border-radius: 34px; box-shadow: 0 28px 80px rgba(83,56,24,.18); overflow: hidden; border: 1px solid #ddd2c1; }
+    .top { padding: 18px 18px 10px; background: #fbf7ef; border-bottom: 1px solid #e4d9ca; }
+    .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #796d5d; font-weight: 700; }
+    .title { font-size: 28px; line-height: 1.1; font-weight: 800; margin: 8px 0 6px; }
+    .sub { font-size: 14px; color: #6c6153; }
+    .hero { padding: 16px 18px; display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: center; }
+    .cover { width: 84px; height: 120px; border-radius: 16px; background: linear-gradient(160deg,#b6845d,#7a4b2f); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+    .statusCard { margin: 0 18px 14px; background: #fffdf8; border: 1px solid #e4d9ca; border-radius: 22px; padding: 16px; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #f0e5d5; color: #6f4d2c; font-weight: 700; font-size: 13px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: #9b6940; }
+    .headline { font-size: 20px; font-weight: 800; margin: 14px 0 6px; }
+    .desc { color: #6c6153; font-size: 14px; line-height: 1.45; }
+    .progress { margin-top: 14px; }
+    .bar { height: 10px; background: #eee4d6; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; width: 28%; background: linear-gradient(90deg,#ba8457,#8b5d37); border-radius: 999px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .stat { background: #f8f1e6; border: 1px solid #e4d9ca; border-radius: 18px; padding: 12px; }
+    .k { font-size: 12px; color: #796d5d; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .v { margin-top: 5px; font-size: 16px; font-weight: 800; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .btn { border: 0; border-radius: 16px; padding: 14px 12px; font-weight: 800; font-size: 15px; }
+    .primary { background: #8d5f3b; color: #fffaf6; }
+    .secondary { background: #f3ebdf; color: #6f4d2c; border: 1px solid #e4d9ca; }
+    .section { padding: 0 18px 14px; }
+    .section h3 { margin: 6px 0 10px; font-size: 15px; }
+    .event, .row { background: #fffdf8; border: 1px solid #e4d9ca; border-radius: 18px; padding: 12px 14px; margin-bottom: 10px; }
+    .eventTitle, .rowTitle { font-weight: 800; font-size: 14px; }
+    .meta { color: #6c6153; font-size: 13px; margin-top: 4px; line-height: 1.4; }
+    .safe { color: #885f00; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="phone">
+<div class="top"><div class="eyebrow">Listening Project</div><div class="title">Your book is being prepared</div><div class="sub">Warmer, calmer, less technical language.</div></div>
+<div class="hero"><div class="cover"></div><div><div class="rowTitle">Thinking, Fast and Slow</div><div class="meta">Daniel Kahneman</div><div class="meta">Currently on the Introduction chapter</div></div></div>
+<div class="statusCard"><div class="pill"><span class="dot"></span>Creating audio</div><div class="headline">The app is speaking the next section aloud</div><div class="desc">It has finished cleaning the text and is now turning it into audio. You can safely stop here if you want to change settings first.</div><div class="progress"><div class="bar"><div class="fill"></div></div></div><div class="stats"><div class="stat"><div class="k">Book progress</div><div class="v">Chapter 4 of 50</div></div><div class="stat"><div class="k">Current section</div><div class="v">16 of 123 pieces</div></div></div><div class="actions"><button class="btn primary">Stop and review</button><button class="btn secondary">Open progress log</button></div></div>
+<div class="section"><h3>Clarity panel</h3><div class="event"><div class="eventTitle">What’s happening now</div><div class="meta">Generating audio for the current piece of text.</div></div><div class="event"><div class="eventTitle">What happens next</div><div class="meta">The app saves that audio, moves to the next piece, and repeats until the chapter is done.</div></div></div>
+</div>
+  </div>
+</body>
+</html>

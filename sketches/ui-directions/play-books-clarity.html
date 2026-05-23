@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direction A · Play Books clarity</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; background: #dfe6f7; color: #111827; }
+    .page { min-height: 100vh; display: flex; justify-content: center; padding: 18px; }
+    .phone { width: 390px; min-height: 844px; background: #f7f9fe; border-radius: 34px; box-shadow: 0 28px 80px rgba(61,99,221,.20); overflow: hidden; border: 1px solid #d8e0f0; }
+    .top { padding: 18px 18px 10px; background: #f7f9fe; border-bottom: 1px solid #dbe3f2; }
+    .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #5d6b84; font-weight: 700; }
+    .title { font-size: 28px; line-height: 1.1; font-weight: 800; margin: 8px 0 6px; }
+    .sub { font-size: 14px; color: #556277; }
+    .hero { padding: 16px 18px; display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: center; }
+    .cover { width: 84px; height: 120px; border-radius: 16px; background: linear-gradient(160deg,#7ba2ff,#3d63dd); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+    .statusCard { margin: 0 18px 14px; background: #ffffff; border: 1px solid #dbe3f2; border-radius: 22px; padding: 16px; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #e8f0ff; color: #2144a2; font-weight: 700; font-size: 13px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: #3d63dd; }
+    .headline { font-size: 20px; font-weight: 800; margin: 14px 0 6px; }
+    .desc { color: #556277; font-size: 14px; line-height: 1.45; }
+    .progress { margin-top: 14px; }
+    .bar { height: 10px; background: #e6edfb; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; width: 32%; background: linear-gradient(90deg,#5b7cff,#3660d7); border-radius: 999px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .stat { background: #f8fbff; border: 1px solid #dbe3f2; border-radius: 18px; padding: 12px; }
+    .k { font-size: 12px; color: #5d6b84; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .v { margin-top: 5px; font-size: 16px; font-weight: 800; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .btn { border: 0; border-radius: 16px; padding: 14px 12px; font-weight: 800; font-size: 15px; }
+    .primary { background: #2253d8; color: #fff; }
+    .secondary { background: #eef3ff; color: #2144a2; border: 1px solid #dbe3f2; }
+    .section { padding: 0 18px 14px; }
+    .section h3 { margin: 6px 0 10px; font-size: 15px; }
+    .event, .row { background: #ffffff; border: 1px solid #dbe3f2; border-radius: 18px; padding: 12px 14px; margin-bottom: 10px; }
+    .eventTitle, .rowTitle { font-weight: 800; font-size: 14px; }
+    .meta { color: #556277; font-size: 13px; margin-top: 4px; line-height: 1.4; }
+    .safe { color: #8a5b00; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="phone">
+<div class="top"><div class="eyebrow">Audiobook Library</div><div class="title">Now generating audio</div><div class="sub">Plain-English progress, big controls, no guessing.</div></div>
+<div class="hero"><div class="cover"></div><div><div class="rowTitle">Thinking, Fast and Slow</div><div class="meta">Daniel Kahneman</div><div class="meta">Chapter 4 of 50 · Introduction</div></div></div>
+<div class="statusCard"><div class="pill"><span class="dot"></span>Generating audio</div><div class="headline">Working on chunk 16 of 123</div><div class="desc">Last update 8 seconds ago. Audio is actively being created for the current chapter.</div><div class="progress"><div class="bar"><div class="fill"></div></div></div><div class="stats"><div class="stat"><div class="k">Overall</div><div class="v">8% of book</div></div><div class="stat"><div class="k">Current chapter</div><div class="v">13% complete</div></div></div><div class="actions"><button class="btn primary">Stop generation</button><button class="btn secondary">View details</button></div></div>
+<div class="section"><h3>What’s happening</h3><div class="event"><div class="eventTitle">Generating spoken audio</div><div class="meta">The app already cleaned this chunk. It is now synthesizing speech with Kokoro AF Heart.</div></div><div class="event"><div class="eventTitle">Next up</div><div class="meta">Chunk 17 of 123 in the Introduction chapter.</div></div></div>
+</div>
+  </div>
+</body>
+</html>

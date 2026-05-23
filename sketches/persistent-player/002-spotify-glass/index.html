@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Persistent Player Mockup — Spotify Glass</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 28px 16px;
+      background: radial-gradient(circle at top, #25382f 0%, #0a0d0c 45%, #050606 100%);
+      color: #f4fbf6;
+    }
+    .phone {
+      width: 390px;
+      min-height: 844px;
+      border-radius: 34px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(180deg, #0d1311 0%, #141b18 60%, #101312 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.45);
+    }
+    .screen { display: none; min-height: 844px; }
+    .screen.active { display: block; }
+    .content { padding: 22px 20px 186px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .tiny { color: #8ba496; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .bubble {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px; padding: 9px 12px; color: #dbe6df; font-size: 0.79rem; font-weight: 700;
+      backdrop-filter: blur(18px);
+    }
+    h1 { font-size: 2rem; line-height: 1.02; margin-top: 8px; }
+    .muted { color: #acc0b4; }
+    .feature {
+      margin-top: 18px; border-radius: 30px; padding: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 20px 48px rgba(0,0,0,0.2);
+    }
+    .book-hero { display: grid; grid-template-columns: 110px 1fr; gap: 14px; align-items: center; }
+    .cover {
+      width: 110px; height: 154px; border-radius: 24px;
+      background: linear-gradient(160deg, #234936, #4ac383 65%, #b0ffd0);
+      box-shadow: 0 20px 44px rgba(41,151,95,0.28);
+      position: relative; overflow: hidden;
+    }
+    .cover::before {
+      content: "Thinking\A Fast and Slow";
+      white-space: pre;
+      position: absolute; inset: 18px;
+      font-size: 1rem; line-height: 1.05; font-weight: 800;
+      color: rgba(255,255,255,0.94);
+    }
+    .btns { display: flex; gap: 10px; margin-top: 16px; }
+    .btn {
+      border: 0; cursor: pointer; padding: 12px 14px; border-radius: 16px; font-weight: 800;
+      background: #59d891; color: #06130c;
+    }
+    .btn.alt { background: rgba(255,255,255,0.08); color: #eaf6ef; }
+    .row { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
+    .stat {
+      flex: 1; border-radius: 22px; padding: 14px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    }
+    .stat .k { color: #90a89a; font-size: 0.77rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+    .stat .v { margin-top: 8px; font-weight: 800; }
+    .card {
+      margin-top: 14px; border-radius: 24px; padding: 16px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    }
+    .chapter { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .chapter:last-child { border-bottom: 0; }
+    .badge { border-radius: 999px; padding: 7px 10px; font-size: 0.76rem; font-weight: 800; }
+    .badge.now { background: rgba(89,216,145,0.14); color: #85f0b2; }
+    .badge.next { background: rgba(143,124,255,0.14); color: #c5b7ff; }
+    .badge.wait { background: rgba(255,255,255,0.08); color: #9fb2a6; }
+
+    .reader {
+      background: linear-gradient(180deg, #070909 0%, #0f1412 100%);
+    }
+    .reader .content { padding-bottom: 120px; }
+    .reader-pane {
+      border-radius: 28px; background: #161d1a; border: 1px solid rgba(255,255,255,0.05);
+      padding: 22px; margin-top: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .reader-pane p { margin-top: 14px; line-height: 1.75; color: #d8e5dc; }
+
+    .mini {
+      position: absolute; left: 14px; right: 14px; bottom: 88px; z-index: 4;
+      border-radius: 28px; padding: 14px;
+      background: linear-gradient(180deg, rgba(24,32,28,0.94), rgba(13,18,16,0.96));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 26px 58px rgba(0,0,0,0.4);
+      display: flex; gap: 12px; align-items: center; cursor: pointer;
+      backdrop-filter: blur(20px);
+    }
+    .mini.hidden { display: none; }
+    .mini-cover {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: linear-gradient(160deg, #234936, #4ac383 65%, #b0ffd0);
+      flex: 0 0 auto;
+    }
+    .mini-meta { flex: 1; min-width: 0; }
+    .mini-title { font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-sub { color: #9fb2a6; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meter { margin-top: 8px; height: 5px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+    .meter span { display: block; width: 42%; height: 100%; background: linear-gradient(90deg, #59d891, #bbf7d0); }
+    .playbtn {
+      width: 48px; height: 48px; border-radius: 50%; border: 0; cursor: pointer;
+      background: #59d891; color: #07120c; font-weight: 900;
+    }
+    .bottom {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 72px;
+      display: flex; justify-content: space-around; align-items: center;
+      background: rgba(8,10,9,0.94); border-top: 1px solid rgba(255,255,255,0.06); z-index: 2;
+      backdrop-filter: blur(18px);
+    }
+    .nav { color: #8da396; font-size: 0.75rem; font-weight: 800; text-align: center; cursor: pointer; }
+    .nav.active { color: #f4fbf6; }
+    .reader-pill {
+      position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 5;
+      display: none; align-items: center; gap: 12px; padding: 13px 14px;
+      border-radius: 22px; background: rgba(8,10,9,0.96); border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 22px 50px rgba(0,0,0,0.42); cursor: pointer;
+    }
+    .reader-pill.show { display: flex; }
+    .glow { width: 10px; height: 10px; border-radius: 50%; background: #59d891; box-shadow: 0 0 18px #59d891; }
+    .sheet {
+      position: absolute; inset: 0; z-index: 9; display: none; align-items: flex-end;
+      background: rgba(2,4,4,0.42); backdrop-filter: blur(14px);
+    }
+    .sheet.open { display: flex; }
+    .panel {
+      width: 100%; min-height: 84%; border-radius: 30px 30px 0 0; padding: 18px 20px 28px;
+      background:
+        radial-gradient(circle at top, rgba(95,217,148,0.22), transparent 22%),
+        linear-gradient(180deg, #141b18 0%, #0b0f0e 100%);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 -18px 60px rgba(0,0,0,0.32);
+    }
+    .grabber { width: 48px; height: 5px; border-radius: 999px; background: rgba(255,255,255,0.16); margin: 0 auto 16px; }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; }
+    .icon { border: 0; cursor: pointer; border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,0.08); color: #eff9f2; font-weight: 800; }
+    .hero-cover {
+      width: 238px; height: 238px; border-radius: 30px; margin: 18px auto;
+      background: linear-gradient(160deg, #234936, #4ac383 65%, #b0ffd0);
+      box-shadow: 0 28px 70px rgba(31,144,88,0.26);
+      position: relative; overflow: hidden;
+    }
+    .hero-cover::before {
+      content: "Thinking\A Fast and Slow";
+      white-space: pre;
+      position: absolute; left: 22px; top: 24px;
+      font-size: 1.4rem; line-height: 1.04; font-weight: 900;
+      color: rgba(255,255,255,0.94);
+    }
+    .center { text-align: center; }
+    .seek { margin-top: 18px; }
+    input[type="range"] { width: 100%; accent-color: #59d891; }
+    .times { display: flex; justify-content: space-between; color: #92a79a; font-size: 0.82rem; margin-top: 6px; }
+    .controls { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 18px; }
+    .circle, .circle-main {
+      display: inline-flex; align-items: center; justify-content: center; border: 0; cursor: pointer; border-radius: 50%; font-weight: 900;
+    }
+    .circle { width: 48px; height: 48px; background: rgba(255,255,255,0.08); color: #eff9f2; }
+    .circle-main { width: 72px; height: 72px; background: #59d891; color: #07120c; }
+    .control-row { display: flex; gap: 10px; margin-top: 16px; }
+    .control-pill {
+      flex: 1; text-align: center; padding: 12px 10px; border-radius: 18px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.06); font-weight: 800;
+    }
+    .queue { margin-top: 18px; border-radius: 24px; padding: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+    .q { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .q:last-child { border-bottom: 0; }
+    .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,0.08); font-size: 0.8rem; font-weight: 900; }
+    .q.active .n { background: #59d891; color: #07120c; }
+    .state { font-size: 0.78rem; font-weight: 900; }
+    .state.live { color: #8ef0b6; }
+    .state.ready { color: #c9bcff; }
+    .state.wait { color: #9fb2a6; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <section class="screen active" data-screen="library">
+      <div class="content">
+        <div class="top"><div class="bubble">Library</div><div class="bubble">Persistent audio</div></div>
+        <div class="tiny">Stand-alone player concept</div>
+        <h1>Audiobook playback becomes its own layer</h1>
+        <p class="muted" style="margin-top:10px">The player is no longer tied to one page. It travels with you, remembers where you are, and opens like a proper now-playing destination.</p>
+        <div class="feature">
+          <div class="book-hero">
+            <div class="cover"></div>
+            <div>
+              <div class="tiny" style="color:#8ef0b6">Listening now</div>
+              <div style="font-size:1.2rem;font-weight:900;margin-top:6px">Thinking, Fast and Slow</div>
+              <div class="muted" style="margin-top:4px">Daniel Kahneman</div>
+              <div style="margin-top:10px;color:#dce9df;font-weight:700">Chapter 12 · The science of availability</div>
+            </div>
+          </div>
+          <div class="btns">
+            <button class="btn" id="openA">Open player</button>
+            <button class="btn alt" data-screen-link="book">Go to book</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="stat"><div class="k">Current time</div><div class="v">18:42 / 47:50</div></div>
+          <div class="stat"><div class="k">Next chapter</div><div class="v">Expert intuition</div></div>
+        </div>
+        <div class="card">
+          <div class="tiny">Continue where you left off</div>
+          <div style="font-size:1.08rem;font-weight:900;margin-top:8px">The player bar stays visible on Library, Book, and Settings.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="book">
+      <div class="content">
+        <div class="top"><div class="bubble" data-screen-link="library">← Library</div><div class="bubble">Book detail</div></div>
+        <div class="feature">
+          <div class="book-hero">
+            <div class="cover"></div>
+            <div>
+              <div style="font-size:1.3rem;font-weight:900">Thinking, Fast and Slow</div>
+              <div class="muted" style="margin-top:6px">Daniel Kahneman</div>
+              <div class="btns">
+                <button class="btn" id="openB">Now playing</button>
+                <button class="btn alt" data-screen-link="reader">Read</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="tiny">Playback-aware chapters</div>
+          <div class="chapter"><div><div style="font-weight:800">12. The science of availability</div><div class="muted">Current chapter</div></div><div class="badge now">Playing</div></div>
+          <div class="chapter"><div><div style="font-weight:800">13. Expert intuition</div><div class="muted">Will auto-advance</div></div><div class="badge next">Next</div></div>
+          <div class="chapter"><div><div style="font-weight:800">14. A machine for jumping to conclusions</div><div class="muted">Generation pending</div></div><div class="badge wait">Wait</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen reader" data-screen="reader">
+      <div class="content">
+        <div class="top"><div class="bubble" data-screen-link="book">← Back</div><div class="bubble">Reader</div></div>
+        <div class="reader-pane">
+          <div class="tiny">Chapter 12</div>
+          <div style="font-size:1.3rem;font-weight:900;margin-top:8px">The science of availability</div>
+          <p>In the audio-first variant, the reader stays immersive and dark, but a slim audio pill remains available so the user never loses transport controls.</p>
+          <p>This avoids forcing the bottom mini-player over the reading surface while still preserving the same now-playing state underneath.</p>
+          <p>The key emotional difference from the warm shell is that this version makes listening feel premium, cinematic, and more obviously central.</p>
+        </div>
+      </div>
+      <div class="reader-pill show" id="readerPill">
+        <div class="glow"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Playing · Chapter 12</div>
+          <div class="muted" style="font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tap to open full controls</div>
+        </div>
+        <button class="playbtn" id="readerPlay">❚❚</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="settings">
+      <div class="content">
+        <div class="top"><div class="bubble">Settings</div><div class="bubble">Playback persists</div></div>
+        <div class="card"><div class="tiny">Proof point</div><div style="font-size:1.15rem;font-weight:900;margin-top:8px">Changing app settings does not tear down the player anymore.</div></div>
+        <div class="card"><div style="font-weight:800">Voice</div><div class="muted" style="margin-top:6px">Kokoro AF Heart</div></div>
+        <div class="card"><div style="font-weight:800">Playback speed default</div><div class="muted" style="margin-top:6px">1.25×</div></div>
+      </div>
+    </section>
+
+    <div class="mini" id="mini">
+      <div class="mini-cover"></div>
+      <div class="mini-meta">
+        <div class="mini-title">Thinking, Fast and Slow</div>
+        <div class="mini-sub" id="miniSub">Ch. 12 · 18:42 listened · Live</div>
+        <div class="meter"><span></span></div>
+      </div>
+      <button class="playbtn" id="miniPlay">❚❚</button>
+    </div>
+
+    <div class="bottom" id="bottom">
+      <div class="nav active" data-screen-link="library">Library</div>
+      <div class="nav" data-screen-link="book">Book</div>
+      <div class="nav" data-screen-link="settings">Settings</div>
+    </div>
+
+    <div class="sheet" id="sheet">
+      <div class="panel">
+        <div class="grabber"></div>
+        <div class="sheet-head">
+          <div>
+            <div class="tiny" style="color:#8ef0b6">Now playing</div>
+            <div style="font-size:1.08rem;font-weight:900;margin-top:4px">Global player layer</div>
+          </div>
+          <button class="icon" id="close">Done</button>
+        </div>
+        <div class="hero-cover"></div>
+        <div class="center">
+          <div style="font-size:1.55rem;font-weight:900">Thinking, Fast and Slow</div>
+          <div class="muted" style="margin-top:6px">Daniel Kahneman</div>
+          <div style="margin-top:10px;font-weight:800">Chapter 12 · The science of availability</div>
+        </div>
+        <div class="seek">
+          <input type="range" min="0" max="100" value="42">
+          <div class="times"><span>18:42</span><span>47:50</span></div>
+        </div>
+        <div class="controls">
+          <button class="circle">15</button>
+          <button class="circle">⏮</button>
+          <button class="circle-main" id="sheetPlay">❚❚</button>
+          <button class="circle">⏭</button>
+          <button class="circle">30</button>
+        </div>
+        <div class="control-row">
+          <div class="control-pill">1.25×</div>
+          <div class="control-pill">Bookmark</div>
+          <div class="control-pill">Open book</div>
+        </div>
+        <div class="queue">
+          <div class="tiny">Chapter queue</div>
+          <div class="q active"><div class="n">12</div><div><div style="font-weight:900">The science of availability</div><div class="muted" style="font-size:0.83rem">Current chapter</div></div><div class="state live">Live</div></div>
+          <div class="q"><div class="n">13</div><div><div style="font-weight:900">Expert intuition</div><div class="muted" style="font-size:0.83rem">Ready for auto-advance</div></div><div class="state ready">Ready</div></div>
+          <div class="q"><div class="n">14</div><div><div style="font-weight:900">Jumping to conclusions</div><div class="muted" style="font-size:0.83rem">Not generated yet</div></div><div class="state wait">Wait</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const screens = [...document.querySelectorAll('[data-screen]')];
+    const links = [...document.querySelectorAll('[data-screen-link]')];
+    const mini = document.getElementById('mini');
+    const bottom = document.getElementById('bottom');
+    const sheet = document.getElementById('sheet');
+    const miniPlay = document.getElementById('miniPlay');
+    const sheetPlay = document.getElementById('sheetPlay');
+    const readerPlay = document.getElementById('readerPlay');
+    let playing = true;
+
+    function setScreen(name) {
+      screens.forEach(s => s.classList.toggle('active', s.dataset.screen === name));
+      document.querySelectorAll('.nav').forEach(n => n.classList.toggle('active', n.dataset.screenLink === name));
+      const isReader = name === 'reader';
+      mini.classList.toggle('hidden', isReader);
+      bottom.style.display = isReader ? 'none' : 'flex';
+    }
+
+    function toggleSheet(force) {
+      sheet.classList.toggle('open', force == null ? !sheet.classList.contains('open') : force);
+    }
+
+    function syncIcons() {
+      const icon = playing ? '❚❚' : '▶';
+      [miniPlay, sheetPlay, readerPlay].forEach(btn => btn.textContent = icon);
+      document.getElementById('miniSub').textContent = playing
+        ? 'Ch. 12 · 18:42 listened · Live'
+        : 'Paused · Ch. 12 · 18:42';
+    }
+
+    function togglePlay(e) {
+      if (e) e.stopPropagation();
+      playing = !playing;
+      syncIcons();
+    }
+
+    links.forEach(el => el.addEventListener('click', () => setScreen(el.dataset.screenLink)));
+    document.getElementById('openA').addEventListener('click', () => toggleSheet(true));
+    document.getElementById('openB').addEventListener('click', () => toggleSheet(true));
+    document.getElementById('close').addEventListener('click', () => toggleSheet(false));
+    document.getElementById('readerPill').addEventListener('click', () => toggleSheet(true));
+    mini.addEventListener('click', () => toggleSheet(true));
+    miniPlay.addEventListener('click', togglePlay);
+    sheetPlay.addEventListener('click', togglePlay);
+    readerPlay.addEventListener('click', togglePlay);
+    sheet.addEventListener('click', (e) => { if (e.target === sheet) toggleSheet(false); });
+    syncIcons();
+  </script>
+</body>
+</html>

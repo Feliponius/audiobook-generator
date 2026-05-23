@@ -1,0 +1,44 @@
+# Python/runtime caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+
+# Local env/secrets
+.env
+.env.*
+!.env.example
+
+# Generated audiobook/audio outputs
+out*/
+*.m4b
+*.mp3
+*.wav
+*.flac
+*.ogg
+*.aac
+*.m4a
+*.ts
+*.m3u8
+
+# Local book/audio libraries and imports
+library/
+incoming/
+voice-samples/
+
+# Large sample/input books
+*.epub
+*.pdf
+
+# Temporary experiment files
+tmp_*.py
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/

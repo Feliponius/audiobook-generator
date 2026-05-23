@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Persistent Player Mockups</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #09110d 0%, #121a16 100%);
+      color: #f4f6f4;
+      min-height: 100vh;
+      padding: 28px;
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    h1 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 10px; }
+    p.lead { color: #b6c4bb; max-width: 760px; margin-bottom: 28px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.28);
+      backdrop-filter: blur(18px);
+    }
+    .eyebrow {
+      color: #88d7a6;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h2 { font-size: 1.25rem; margin-bottom: 10px; }
+    ul { margin: 14px 0 20px 18px; color: #c8d2cc; }
+    li + li { margin-top: 8px; }
+    a.btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: #08130d;
+      background: #96f0b5;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-weight: 700;
+    }
+    .footer { margin-top: 26px; color: #a3b1a9; font-size: 0.92rem; }
+    code { color: #d5ffe3; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Persistent Player Mockups</h1>
+    <p class="lead">Two mobile-first mockups for a stand-alone audiobook player that survives navigation. Both variants include a persistent mini-player, an expanded now-playing sheet, chapter context, and route changes that keep audio alive.</p>
+    <div class="grid">
+      <section class="card">
+        <div class="eyebrow">Variant 001</div>
+        <h2>Play Books Shell</h2>
+        <ul>
+          <li>Warm, calm, Google Play Books-like shell</li>
+          <li>Persistent player bar above bottom nav</li>
+          <li>Reader route swaps the bottom bar for an in-reader dock</li>
+          <li>Good if you want “real app” comfort over audio-drama flash</li>
+        </ul>
+        <a class="btn" href="001-playbooks-shell/index.html">Open variant</a>
+      </section>
+      <section class="card">
+        <div class="eyebrow">Variant 002</div>
+        <h2>Spotify Glass</h2>
+        <ul>
+          <li>Darker, more album-centric and modern</li>
+          <li>Glass mini-player with bolder now-playing emphasis</li>
+          <li>Stronger chapter queue and transport controls</li>
+          <li>Good if you want the player to feel like the star feature</li>
+        </ul>
+        <a class="btn" href="002-spotify-glass/index.html">Open variant</a>
+      </section>
+    </div>
+    <p class="footer">Open these files directly from disk or via the local server. Path: <code>sketches/persistent-player/</code></p>
+  </div>
+</body>
+</html>

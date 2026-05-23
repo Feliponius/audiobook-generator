@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direction B · Linear ops dark</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; background: #0a0c12; color: #f3f5fb; }
+    .page { min-height: 100vh; display: flex; justify-content: center; padding: 18px; }
+    .phone { width: 390px; min-height: 844px; background: #0f1118; border-radius: 34px; box-shadow: 0 28px 80px rgba(0,0,0,.50); overflow: hidden; border: 1px solid #202433; }
+    .top { padding: 18px 18px 10px; background: #121623; border-bottom: 1px solid #24293a; }
+    .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #8b92ad; font-weight: 700; }
+    .title { font-size: 28px; line-height: 1.1; font-weight: 800; margin: 8px 0 6px; }
+    .sub { font-size: 14px; color: #a6adc4; }
+    .hero { padding: 16px 18px; display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: center; }
+    .cover { width: 84px; height: 120px; border-radius: 16px; background: linear-gradient(160deg,#7b5cff,#311f83); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+    .statusCard { margin: 0 18px 14px; background: #141927; border: 1px solid #24293a; border-radius: 22px; padding: 16px; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #221a42; color: #b8a8ff; font-weight: 700; font-size: 13px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: #8f72ff; }
+    .headline { font-size: 20px; font-weight: 800; margin: 14px 0 6px; }
+    .desc { color: #a6adc4; font-size: 14px; line-height: 1.45; }
+    .progress { margin-top: 14px; }
+    .bar { height: 10px; background: #22283a; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; width: 46%; background: linear-gradient(90deg,#8f72ff,#5b46da); border-radius: 999px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .stat { background: #101521; border: 1px solid #24293a; border-radius: 18px; padding: 12px; }
+    .k { font-size: 12px; color: #8b92ad; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .v { margin-top: 5px; font-size: 16px; font-weight: 800; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .btn { border: 0; border-radius: 16px; padding: 14px 12px; font-weight: 800; font-size: 15px; }
+    .primary { background: #7c5cff; color: #fff; }
+    .secondary { background: #161b29; color: #d7ddf8; border: 1px solid #24293a; }
+    .section { padding: 0 18px 14px; }
+    .section h3 { margin: 6px 0 10px; font-size: 15px; }
+    .event, .row { background: #121726; border: 1px solid #24293a; border-radius: 18px; padding: 12px 14px; margin-bottom: 10px; }
+    .eventTitle, .rowTitle { font-weight: 800; font-size: 14px; }
+    .meta { color: #a6adc4; font-size: 13px; margin-top: 4px; line-height: 1.4; }
+    .safe { color: #ffbf5a; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="phone">
+<div class="top"><div class="eyebrow">Generation Console</div><div class="title">Active conversion</div><div class="sub">Built for certainty: state, pace, and controls first.</div></div>
+<div class="hero"><div class="cover"></div><div><div class="rowTitle">Thinking, Fast and Slow</div><div class="meta">Run #1123554b</div><div class="meta">Chapter 4/50 · Chunk 16/123 · TTS</div></div></div>
+<div class="statusCard"><div class="pill"><span class="dot"></span>Live process detected</div><div class="headline">Audio generation in progress</div><div class="desc">No hidden work: this view only says “running” when a live process exists.</div><div class="progress"><div class="bar"><div class="fill"></div></div></div><div class="stats"><div class="stat"><div class="k">Throughput</div><div class="v">16 chunks done</div></div><div class="stat"><div class="k">Last event</div><div class="v">TTS completed</div></div></div><div class="actions"><button class="btn primary">Stop now</button><button class="btn secondary">Pause queue</button></div></div>
+<div class="section"><h3>Recent events</h3><div class="event"><div class="eventTitle">23:26:17 · chunk_tts_completed</div><div class="meta">Introduction · chunk 16 finished successfully.</div></div><div class="event"><div class="eventTitle">23:26:05 · chunk_tts_started</div><div class="meta">Kokoro voice synthesis started for chunk 16.</div></div><div class="event"><div class="eventTitle">Safe action split</div><div class="meta"><span class="safe">Delete book</span> stays separate from <span class="safe">Stop generation</span>.</div></div></div>
+</div>
+  </div>
+</body>
+</html>
