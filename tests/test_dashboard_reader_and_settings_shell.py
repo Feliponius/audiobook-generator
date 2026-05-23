@@ -157,6 +157,14 @@ class DashboardShellTests(unittest.TestCase):
             html,
         )
 
+    def test_reader_citation_prefers_direct_href_over_toc_fuzzy_match(self) -> None:
+        html = DASHBOARD.read_text(encoding="utf-8")
+        self.assertIn("function citationHrefForReader(", html)
+        self.assertIn("citation.href || citation.source", html)
+        self.assertIn("state.rendition.display(citeHref)", html)
+        self.assertIn("function findReaderTocHrefForCitation(", html)
+        self.assertIn("Opened the closest matching chapter", html)
+
     def test_book_chat_insight_detail_modal_and_citation_helpers(self) -> None:
         html = DASHBOARD.read_text(encoding="utf-8")
         self.assertIn('id="bookChatSavedInsightsSection"', html)

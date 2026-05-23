@@ -85,6 +85,42 @@ def test_save_memory_stores_optional_metadata() -> None:
         ]
 
 
+def test_save_memory_persists_citation_source_href_and_indices() -> None:
+    with TemporaryDirectory() as td:
+        root = Path(td)
+        rec = save_memory(
+            root,
+            "b1",
+            "Saved insight with exact source link.",
+            source="insight",
+            citations=[
+                {
+                    "passage_id": "passage_b1_0",
+                    "chapter": "Chapter 5",
+                    "snippet": "A useful passage about influence.",
+                    "source": "chapter_5.xhtml",
+                    "href": "chapter_5.xhtml",
+                    "chapter_index": 5,
+                    "chunk_index": 3,
+                    "unsafe": {"nested": True},
+                }
+            ],
+        )
+        assert rec["citations"] == [
+            {
+                "passage_id": "passage_b1_0",
+                "chapter": "Chapter 5",
+                "snippet": "A useful passage about influence.",
+                "source": "chapter_5.xhtml",
+                "href": "chapter_5.xhtml",
+                "chapter_index": 5,
+                "chunk_index": 3,
+            }
+        ]
+        loaded = list_memories(root, "b1")[0]
+        assert loaded["citations"] == rec["citations"]
+
+
 def test_save_memory_sanitizes_citation_snippet_length() -> None:
     with TemporaryDirectory() as td:
         root = Path(td)

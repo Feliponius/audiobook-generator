@@ -68,15 +68,17 @@ def retrieve_top_k(
     scored.sort(key=lambda item: item[0], reverse=True)
     hits: list[dict[str, Any]] = []
     for score, passage in scored[: max(top_k, 0)]:
-        hits.append(
-            {
-                "passage_id": passage.get("id"),
-                "score": round(score, 6),
-                "chapter": passage.get("chapter") or "",
-                "text": passage.get("text") or "",
-                "snippet": _snippet(passage.get("text") or ""),
-            }
-        )
+        hit: dict[str, Any] = {
+            "passage_id": passage.get("id"),
+            "score": round(score, 6),
+            "chapter": passage.get("chapter") or "",
+            "text": passage.get("text") or "",
+            "snippet": _snippet(passage.get("text") or ""),
+        }
+        for key in ("source", "href", "chapter_index", "chunk_index"):
+            if key in passage and passage[key] not in (None, ""):
+                hit[key] = passage[key]
+        hits.append(hit)
     return hits
 
 

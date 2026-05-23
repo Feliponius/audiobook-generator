@@ -10,7 +10,8 @@ from typing import Any
 from book_chat.index_store import read_passages, write_passages
 
 VALID_SOURCES = frozenset({"user", "assistant", "insight"})
-_CITATION_KEYS = ("passage_id", "chapter", "snippet")
+_CITATION_STRING_KEYS = ("passage_id", "chapter", "snippet", "source", "href")
+_CITATION_INT_KEYS = ("chapter_index", "chunk_index")
 _MAX_SNIPPET_LEN = 1000
 
 
@@ -21,15 +22,23 @@ def _optional_str(value: Any) -> str | None:
     return cleaned or None
 
 
-def _sanitize_citations(citations: Any) -> list[dict[str, str]] | None:
+def _citation_int(value: Any) -> int | None:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    return None
+
+
+def _sanitize_citations(citations: Any) -> list[dict[str, Any]] | None:
     if not isinstance(citations, list):
         return None
-    out: list[dict[str, str]] = []
+    out: list[dict[str, Any]] = []
     for item in citations:
         if not isinstance(item, dict):
             continue
-        row: dict[str, str] = {}
-        for key in _CITATION_KEYS:
+        row: dict[str, Any] = {}
+        for key in _CITATION_STRING_KEYS:
             val = item.get(key)
             if not isinstance(val, str):
                 continue
@@ -39,6 +48,10 @@ def _sanitize_citations(citations: Any) -> list[dict[str, str]] | None:
             if key == "snippet" and len(cleaned) > _MAX_SNIPPET_LEN:
                 cleaned = cleaned[:_MAX_SNIPPET_LEN]
             row[key] = cleaned
+        for key in _CITATION_INT_KEYS:
+            parsed = _citation_int(item.get(key))
+            if parsed is not None:
+                row[key] = parsed
         if row:
             out.append(row)
     return out or None

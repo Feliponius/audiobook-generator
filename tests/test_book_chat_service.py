@@ -28,6 +28,63 @@ def workspace() -> Path:
         yield Path(td).resolve()
 
 
+def test_index_passages_preserves_source_href_and_chunk_metadata(workspace: Path) -> None:
+    embedder = FakeHashEmbedder(dimension=16)
+    index_passages(
+        workspace,
+        "book-1",
+        [
+            {
+                "chapter": "Chapter 5",
+                "text": "A useful passage about influence.",
+                "source": "chapter_5.xhtml",
+                "chapter_index": 5,
+                "chunk_index": 3,
+            }
+        ],
+        embedder=embedder,
+    )
+    stored = read_passages(index_path_for_book(workspace, "book-1"))
+    assert len(stored) == 1
+    row = stored[0]
+    assert row["source"] == "chapter_5.xhtml"
+    assert row["href"] == "chapter_5.xhtml"
+    assert row["chapter_index"] == 5
+    assert row["chunk_index"] == 3
+
+
+def test_query_passages_citations_include_passage_metadata(workspace: Path) -> None:
+    embedder = FakeHashEmbedder(dimension=16)
+    index_passages(
+        workspace,
+        "book-1",
+        [
+            {
+                "chapter": "Chapter 5",
+                "text": "A useful passage about influence.",
+                "source": "chapter_5.xhtml",
+                "chapter_index": 5,
+                "chunk_index": 3,
+            },
+            {"chapter": "Ch2", "text": "Unrelated rest and sleep topic."},
+        ],
+        embedder=embedder,
+    )
+    out = query_passages(
+        workspace,
+        "book-1",
+        "influence in relationships",
+        top_k=1,
+        embedder=embedder,
+        use_model=False,
+    )
+    cite = out["citations"][0]
+    assert cite["source"] == "chapter_5.xhtml"
+    assert cite["href"] == "chapter_5.xhtml"
+    assert cite["chapter_index"] == 5
+    assert cite["chunk_index"] == 3
+
+
 def test_index_passages_writes_jsonl_with_embeddings(workspace: Path) -> None:
     embedder = FakeHashEmbedder(dimension=16)
     result = index_passages(

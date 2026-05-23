@@ -2649,6 +2649,12 @@
         .trim();
     }
 
+    function citationHrefForReader(citation) {
+      if (!citation) return null;
+      const href = String(citation.href || citation.source || '').trim();
+      return href || null;
+    }
+
     function findReaderTocHrefForCitation(flat, citation) {
       if (!flat || !flat.length || !citation) return null;
       const chapter = normalizeCitationChapterLabel(citation.chapter);
@@ -4338,11 +4344,16 @@
       const tocRoot = book.navigation && book.navigation.toc;
       const flat = flattenToc(tocRoot || []);
       if (opts.citation) {
-        const citeHref = findReaderTocHrefForCitation(flat, opts.citation);
+        const directHref = citationHrefForReader(opts.citation);
+        const citeHref = directHref || findReaderTocHrefForCitation(flat, opts.citation);
+        let openedCitationHref = false;
         if (citeHref && state.rendition) {
-          await state.rendition.display(citeHref).catch(() => {});
-        } else {
+          openedCitationHref = await state.rendition.display(citeHref).then(() => true).catch(() => false);
+        }
+        if (!openedCitationHref) {
           showToast('Opened reader; exact passage location is not available yet');
+        } else if (!directHref) {
+          showToast('Opened the closest matching chapter');
         }
       }
       for (const item of flat) {

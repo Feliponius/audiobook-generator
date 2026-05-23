@@ -152,16 +152,25 @@ def index_passages(
             current=embedded,
             total=total,
         )
-        records.append(
-            {
-                "id": _passage_id(book_id, i),
-                "book_id": book_id,
-                "chapter": chapter,
-                "text": text,
-                "embedding_model": emb.model_name,
-                "embedding": emb.embed(text),
-            }
-        )
+        record: dict[str, Any] = {
+            "id": _passage_id(book_id, i),
+            "book_id": book_id,
+            "chapter": chapter,
+            "text": text,
+            "embedding_model": emb.model_name,
+            "embedding": emb.embed(text),
+        }
+        source = str(item.get("source") or "").strip()
+        if source:
+            record["source"] = source
+            record["href"] = source
+        for key in ("chapter_index", "chunk_index"):
+            val = item.get(key)
+            if isinstance(val, int):
+                record[key] = val
+            elif isinstance(val, str) and val.strip().isdigit():
+                record[key] = int(val.strip())
+        records.append(record)
     _emit_progress(progress_callback, stage="saving", message="Saving index…")
     path = index_path_for_book(root, book_id)
     write_passages(path, records)
@@ -183,11 +192,15 @@ def index_passages(
 
 
 def _citation_from_hit(hit: dict[str, Any]) -> dict[str, Any]:
-    return {
+    citation: dict[str, Any] = {
         "passage_id": hit.get("passage_id"),
         "chapter": hit.get("chapter") or "",
         "snippet": hit.get("snippet") or "",
     }
+    for key in ("source", "href", "chapter_index", "chunk_index"):
+        if key in hit and hit[key] not in (None, ""):
+            citation[key] = hit[key]
+    return citation
 
 
 def normalize_answer_action(action: str | None) -> str:

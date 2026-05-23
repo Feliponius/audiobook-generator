@@ -65,6 +65,30 @@ def test_cosine_similarity_orders_vectors() -> None:
     assert cosine_similarity(q, a) > cosine_similarity(q, b)
 
 
+def test_retrieve_top_k_includes_passage_metadata_when_present() -> None:
+    embedder = FakeHashEmbedder(dimension=8)
+    passages = [
+        {
+            "id": "p0",
+            "book_id": "b1",
+            "chapter": "Chapter 5",
+            "text": "discipline and habits",
+            "source": "chapter_5.xhtml",
+            "href": "chapter_5.xhtml",
+            "chapter_index": 5,
+            "chunk_index": 3,
+            "embedding_model": embedder.model_name,
+            "embedding": embedder.embed("discipline and habits"),
+        },
+    ]
+    query_vec = embedder.embed("discipline")
+    hits = retrieve_top_k(query_vec, passages, top_k=1)
+    assert hits[0]["source"] == "chapter_5.xhtml"
+    assert hits[0]["href"] == "chapter_5.xhtml"
+    assert hits[0]["chapter_index"] == 5
+    assert hits[0]["chunk_index"] == 3
+
+
 def test_retrieve_top_k_returns_closest_passage() -> None:
     embedder = FakeHashEmbedder(dimension=8)
     passages = [
