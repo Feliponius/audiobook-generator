@@ -29,6 +29,13 @@ ROOT = Path(__file__).resolve().parent
 DASHBOARD_PATH = ROOT / "dashboard" / "index.html"
 
 
+def book_chat_embedder_factory():
+    """Return the embedder used for book-chat index/query (overridable in tests)."""
+    from book_chat.embeddings import LocalBGEEmbedder
+
+    return LocalBGEEmbedder()
+
+
 def resolve_library_pipeline_python(project_root: Path) -> str:
     """Python executable used to spawn ``epub_to_audiobook.py`` for library conversions.
 
@@ -1883,6 +1890,84 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "missing id"}, status=400)
                 return
             payload = remove_library_book(root, str(book_id))
+            self._send_json(payload)
+            return
+
+        if parsed.path == "/api/library/book-chat/index":
+            body = self._read_json_body()
+            if not body:
+                self._send_json({"error": "invalid json"}, status=400)
+                return
+            book_id = body.get("book_id")
+            if not isinstance(book_id, str) or not book_id.strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            raw_passages = body.get("passages")
+            if not isinstance(raw_passages, list) or not raw_passages:
+                self._send_json({"error": "missing passages"}, status=400)
+                return
+            normalized: list[dict] = []
+            for item in raw_passages:
+                if not isinstance(item, dict):
+                    continue
+                text = item.get("text")
+                if not isinstance(text, str) or not text.strip():
+                    continue
+                chapter = item.get("chapter")
+                normalized.append(
+                    {
+                        "chapter": str(chapter).strip() if chapter is not None else "",
+                        "text": text.strip(),
+                    }
+                )
+            if not normalized:
+                self._send_json({"error": "no valid passages"}, status=400)
+                return
+            from book_chat.service import index_passages
+
+            payload = index_passages(
+                root,
+                book_id.strip(),
+                normalized,
+                embedder=book_chat_embedder_factory(),
+            )
+            self._send_json(payload)
+            return
+
+        if parsed.path == "/api/library/book-chat/query":
+            body = self._read_json_body()
+            if not body:
+                self._send_json({"error": "invalid json"}, status=400)
+                return
+            book_id = body.get("book_id")
+            question = body.get("question") or body.get("message")
+            if not isinstance(book_id, str) or not book_id.strip():
+                self._send_json({"error": "missing book_id"}, status=400)
+                return
+            if not isinstance(question, str) or not question.strip():
+                self._send_json({"error": "missing question"}, status=400)
+                return
+            top_k = 3
+            if "top_k" in body:
+                try:
+                    top_k = max(1, min(int(body.get("top_k")), 20))
+                except (TypeError, ValueError):
+                    top_k = 3
+            use_model = bool(body.get("use_model"))
+            from book_chat.service import BookChatNotFoundError, query_passages
+
+            try:
+                payload = query_passages(
+                    root,
+                    book_id.strip(),
+                    question.strip(),
+                    top_k=top_k,
+                    embedder=book_chat_embedder_factory(),
+                    use_model=use_model,
+                )
+            except BookChatNotFoundError as exc:
+                self._send_json({"error": str(exc), "book_id": book_id.strip()}, status=404)
+                return
             self._send_json(payload)
             return
 
