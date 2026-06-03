@@ -1516,6 +1516,8 @@ class Handler(BaseHTTPRequestHandler):
             return "audio/mpeg"
         if path.suffix == ".m4a":
             return "audio/mp4"
+        if path.suffix == ".aac":
+            return "audio/aac"
         if path.suffix == ".m3u8":
             return "application/vnd.apple.mpegurl"
         if path.suffix == ".epub":

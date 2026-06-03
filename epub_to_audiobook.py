@@ -23,6 +23,7 @@ import argparse
 import dataclasses
 import hashlib
 import json
+import math
 import multiprocessing as mp
 import os
 import re
@@ -41,6 +42,28 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
 import numpy as np
+
+from tts_cache import (
+    PRONUNCIATION_GLOSSARY_VERSION,
+    wav_file_is_valid,
+    wav_sample_rate,
+    file_fingerprint,
+    piper_config_sample_rate,
+    encoded_output_is_current,
+    tts_cache_path,
+    build_tts_cache_payload,
+    tts_cache_matches,
+    write_tts_cache,
+    write_hls_aac_segment_from_audio,
+    encode_wav_to_hls_aac,
+    write_m3u8,
+    run_quiet,
+    narration_word_count,
+    dynamic_rewrite_max_tokens,
+    validate_rewrite_output,
+    escape_ffmetadata_value,
+    split_oversized_unit,
+)
 
 from bs4 import BeautifulSoup
 from ebooklib import epub, ITEM_DOCUMENT
@@ -238,11 +261,24 @@ def encode_wav_to_m4a(input_path: Path, output_path: Path, bitrate: str = "128k"
 def append_to_m3u8(playlist_path: Path, segment_name: str, duration_s: float) -> None:
     """Append a segment entry to an M3U8 playlist, creating if needed."""
     playlist_path.parent.mkdir(parents=True, exist_ok=True)
+    target = max(1, math.ceil(duration_s))
+    if playlist_path.exists() and playlist_path.stat().st_size > 0:
+        existing = playlist_path.read_text(encoding="utf-8")
+        match = re.search(r"^#EXT-X-TARGETDURATION:(\d+)$", existing, flags=re.M)
+        if match and target > int(match.group(1)):
+            existing = re.sub(
+                r"^#EXT-X-TARGETDURATION:\d+$",
+                f"#EXT-X-TARGETDURATION:{target}",
+                existing,
+                count=1,
+                flags=re.M,
+            )
+            playlist_path.write_text(existing, encoding="utf-8")
     with open(playlist_path, "a", encoding="utf-8") as f:
         if playlist_path.stat().st_size == 0:
             f.write("#EXTM3U\n")
             f.write("#EXT-X-VERSION:3\n")
-            f.write("#EXT-X-TARGETDURATION:60\n")
+            f.write(f"#EXT-X-TARGETDURATION:{target}\n")
             f.write("#EXT-X-PLAYLIST-TYPE:EVENT\n")
         f.write(f"#EXTINF:{duration_s:.3f},\n")
         f.write(f"{segment_name}\n")
@@ -258,12 +294,27 @@ def finalize_m3u8(playlist_path: Path) -> None:
         f.write("#EXT-X-ENDLIST\n")
 
 
-def ensure_hls_gap_segment(gap_wav_path: Path, gap_m4a_path: Path, sample_rate: int) -> float:
+def write_m3u8(playlist_path: Path, entries: List[Tuple[str, float]], *, endlist: bool = False) -> None:
+    playlist_path.parent.mkdir(parents=True, exist_ok=True)
+    target = max(1, max((math.ceil(duration) for _, duration in entries), default=1))
+    with open(playlist_path, "w", encoding="utf-8") as f:
+        f.write("#EXTM3U\n")
+        f.write("#EXT-X-VERSION:3\n")
+        f.write(f"#EXT-X-TARGETDURATION:{target}\n")
+        f.write("#EXT-X-PLAYLIST-TYPE:EVENT\n")
+        for name, dur in entries:
+            f.write(f"#EXTINF:{dur:.3f},\n")
+            f.write(f"{name}\n")
+        if endlist:
+            f.write("#EXT-X-ENDLIST\n")
+
+
+def ensure_hls_gap_segment(gap_wav_path: Path, gap_hls_path: Path, sample_rate: int) -> float:
     """Ensure a silence gap exists in both WAV and HLS segment form and return its duration."""
     gap_seconds = 1.75 if gap_wav_path.name == "chunk-000-gap.wav" else 0.45
     if not (gap_wav_path.exists() and gap_wav_path.stat().st_size > 44):
         make_silence_wav(gap_wav_path, seconds=gap_seconds, sample_rate=sample_rate)
-    encode_wav_to_m4a(gap_wav_path, gap_m4a_path)
+    encode_wav_to_hls_aac(gap_wav_path, gap_hls_path)
     return wav_duration_seconds(gap_wav_path)
 
 
@@ -272,51 +323,44 @@ def rebuild_hls_playlist(chapter_dir: Path, playlist_path: Path, chapter_index: 
     entries = []
 
     lead_gap_wav = chapter_dir / "chunk-000-gap.wav"
-    lead_gap_m4a = chapter_dir / f"chapter-{chapter_index:03d}-gap-000.m4a"
-    lead_gap_duration = ensure_hls_gap_segment(lead_gap_wav, lead_gap_m4a, sample_rate)
-    entries.append((lead_gap_m4a.name, lead_gap_duration))
+    lead_gap_aac = chapter_dir / f"chapter-{chapter_index:03d}-gap-000.aac"
+    lead_gap_duration = ensure_hls_gap_segment(lead_gap_wav, lead_gap_aac, sample_rate)
+    entries.append((lead_gap_aac.name, lead_gap_duration))
 
     for i in range(1, chunk_count + 1):
         chunk_wav = chapter_dir / f"chunk-{i:03d}.wav"
         if not (chunk_wav.exists() and chunk_wav.stat().st_size > 44):
             continue
-        chunk_m4a = chapter_dir / f"chunk-{i:03d}.m4a"
-        encode_wav_to_m4a(chunk_wav, chunk_m4a)
-        entries.append((chunk_m4a.name, wav_duration_seconds(chunk_wav)))
+        chunk_aac = chapter_dir / f"chunk-{i:03d}.aac"
+        encode_wav_to_hls_aac(chunk_wav, chunk_aac)
+        entries.append((chunk_aac.name, wav_duration_seconds(chunk_wav)))
         if i < chunk_count:
             gap_wav = chapter_dir / f"chunk-{i:03d}-gap.wav"
-            gap_m4a = chapter_dir / f"chapter-{chapter_index:03d}-gap-{i:03d}.m4a"
-            gap_duration = ensure_hls_gap_segment(gap_wav, gap_m4a, sample_rate)
-            entries.append((gap_m4a.name, gap_duration))
+            gap_aac = chapter_dir / f"chapter-{chapter_index:03d}-gap-{i:03d}.aac"
+            gap_duration = ensure_hls_gap_segment(gap_wav, gap_aac, sample_rate)
+            entries.append((gap_aac.name, gap_duration))
 
-    with open(playlist_path, "w", encoding="utf-8") as f:
-        f.write("#EXTM3U\n")
-        f.write("#EXT-X-VERSION:3\n")
-        f.write("#EXT-X-TARGETDURATION:60\n")
-        f.write("#EXT-X-PLAYLIST-TYPE:EVENT\n")
-        for name, dur in entries:
-            f.write(f"#EXTINF:{dur:.3f},\n")
-            f.write(f"{name}\n")
+    write_m3u8(playlist_path, entries)
 
 
 def update_live_hls_playlist(chapter_dir: Path, playlist_path: Path, chapter_index: int, chunk_index: int, chunk_count: int, sample_rate: int) -> None:
     """Append the next canonical live-playback entries, including silence gaps before the current chunk."""
     if chunk_index == 1:
         lead_gap_wav = chapter_dir / "chunk-000-gap.wav"
-        lead_gap_m4a = chapter_dir / f"chapter-{chapter_index:03d}-gap-000.m4a"
-        lead_gap_duration = ensure_hls_gap_segment(lead_gap_wav, lead_gap_m4a, sample_rate)
-        append_to_m3u8(playlist_path, lead_gap_m4a.name, lead_gap_duration)
+        lead_gap_aac = chapter_dir / f"chapter-{chapter_index:03d}-gap-000.aac"
+        lead_gap_duration = ensure_hls_gap_segment(lead_gap_wav, lead_gap_aac, sample_rate)
+        append_to_m3u8(playlist_path, lead_gap_aac.name, lead_gap_duration)
     elif chunk_index <= chunk_count:
         prior_gap_wav = chapter_dir / f"chunk-{chunk_index - 1:03d}-gap.wav"
-        prior_gap_m4a = chapter_dir / f"chapter-{chapter_index:03d}-gap-{chunk_index - 1:03d}.m4a"
-        prior_gap_duration = ensure_hls_gap_segment(prior_gap_wav, prior_gap_m4a, sample_rate)
-        append_to_m3u8(playlist_path, prior_gap_m4a.name, prior_gap_duration)
+        prior_gap_aac = chapter_dir / f"chapter-{chapter_index:03d}-gap-{chunk_index - 1:03d}.aac"
+        prior_gap_duration = ensure_hls_gap_segment(prior_gap_wav, prior_gap_aac, sample_rate)
+        append_to_m3u8(playlist_path, prior_gap_aac.name, prior_gap_duration)
 
     chunk_wav = chapter_dir / f"chunk-{chunk_index:03d}.wav"
-    chunk_m4a = chapter_dir / f"chunk-{chunk_index:03d}.m4a"
+    chunk_aac = chapter_dir / f"chunk-{chunk_index:03d}.aac"
     if chunk_wav.exists() and chunk_wav.stat().st_size > 44:
-        encode_wav_to_m4a(chunk_wav, chunk_m4a)
-        append_to_m3u8(playlist_path, chunk_m4a.name, wav_duration_seconds(chunk_wav))
+        encode_wav_to_hls_aac(chunk_wav, chunk_aac)
+        append_to_m3u8(playlist_path, chunk_aac.name, wav_duration_seconds(chunk_wav))
 
 
 def looks_like_table_of_contents(title: str, source: str, text: str) -> bool:
@@ -847,7 +891,16 @@ def synthesize_chunk_piper(
     tts_text = apply_tts_pronunciation_glossary(text).strip()
     tts_text_path = wav_path.with_suffix(".tts.txt")
     tts_text_path.write_text(tts_text + "\n", encoding="utf-8")
-    if wav_path.exists() and wav_path.stat().st_size > 44:
+    cache_payload = build_tts_cache_payload(
+        engine="piper",
+        tts_text=tts_text,
+        settings={
+            "model": file_fingerprint(model),
+            "config": file_fingerprint(config),
+            "piper_bin": str(piper_bin),
+        },
+    )
+    if tts_cache_matches(wav_path, cache_payload):
         log(f"[skip] {wav_path.name}")
         return
     cmd = [
@@ -862,6 +915,7 @@ def synthesize_chunk_piper(
         str(wav_path),
     ]
     run(cmd)
+    write_tts_cache(wav_path, cache_payload)
 
 
 _KOKORO_PIPELINE_CACHE: dict[tuple[str, str], object] = {}
@@ -897,7 +951,18 @@ def synthesize_chunk_kokoro(
     tts_text = apply_tts_pronunciation_glossary(text).strip()
     tts_text_path = wav_path.with_suffix(".tts.txt")
     tts_text_path.write_text(tts_text + "\n", encoding="utf-8")
-    if wav_path.exists() and wav_path.stat().st_size > 44:
+    cache_payload = build_tts_cache_payload(
+        engine="kokoro",
+        tts_text=tts_text,
+        settings={
+            "voice": voice,
+            "language": language,
+            "speed": speed,
+            "repo_id": repo_id,
+            "sample_rate": 24000,
+        },
+    )
+    if tts_cache_matches(wav_path, cache_payload):
         log(f"[skip] {wav_path.name}")
         return
 
@@ -913,10 +978,11 @@ def synthesize_chunk_kokoro(
         raise RuntimeError(f"Kokoro produced no audio for {wav_path.name}")
     audio = np.concatenate(audio_parts)
     write_wav_from_float32(wav_path, audio, sample_rate=24000)
-    
+    write_tts_cache(wav_path, cache_payload)
+
     # Also write HLS segment if path provided
     if hls_segment_path:
-        write_m4a_segment(audio, hls_segment_path, sample_rate=24000)
+        write_hls_aac_segment_from_audio(audio, hls_segment_path, sample_rate=24000)
 
 
 _KOKORO_WORKER_PIPELINE = None
@@ -970,7 +1036,7 @@ def synthesize_chunk_kokoro_job_with_hls(args):
 
 def make_silence_wav(path: Path, seconds: float = 1.75, sample_rate: int = 22050) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists() and path.stat().st_size > 44:
+    if wav_file_is_valid(path) and wav_sample_rate(path) == sample_rate:
         return
     cmd = [
         "ffmpeg",
@@ -1026,7 +1092,7 @@ def ffmpeg_concat(inputs: List[Path], output: Path) -> None:
 
 
 def build_ffmetadata(chapters: List[Chapter], durations: List[float], title: str) -> str:
-    lines = [";FFMETADATA1", f"title={title}"]
+    lines = [";FFMETADATA1", f"title={escape_ffmetadata_value(title)}"]
     start_ms = 0
     for ch, dur in zip(chapters, durations):
         end_ms = start_ms + max(1, int(dur * 1000))
@@ -1036,7 +1102,7 @@ def build_ffmetadata(chapters: List[Chapter], durations: List[float], title: str
                 "TIMEBASE=1/1000",
                 f"START={start_ms}",
                 f"END={end_ms}",
-                f"title={ch.title}",
+                f"title={escape_ffmetadata_value(ch.title)}",
             ]
         )
         start_ms = end_ms
