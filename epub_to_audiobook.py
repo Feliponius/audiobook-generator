@@ -26,6 +26,7 @@ import json
 import multiprocessing as mp
 import os
 import re
+import shutil
 import subprocess
 import threading
 import sys
@@ -605,10 +606,59 @@ def strip_leading_heading(text: str, title: str) -> str:
     return text
 
 
+def _toc_title_map(book: epub.EpubBook) -> dict[str, str]:
+    """Map EPUB document filenames to human chapter titles from the NCX/nav TOC.
+
+    Some publisher EPUBs put file ids like ``Benn_..._c11_r1`` in ``<title>``
+    and use the real chapter names only in the TOC. Prefer the parent section
+    title for chapter documents so the app shows actual book chapters instead
+    of packaging filenames while generation is still running.
+    """
+    try:
+        from ebooklib.epub import Link, Section
+    except Exception:
+        return {}
+
+    titles: dict[str, str] = {}
+
+    def clean(title: object) -> str:
+        return normalize_text(str(title or "")).strip()
+
+    def add(href: object, title: object) -> None:
+        t = clean(title)
+        if not href or not t:
+            return
+        key = str(href).split("#", 1)[0]
+        if key and key not in titles:
+            titles[key] = t
+
+    def walk(nodes, section_title: str | None = None) -> None:
+        for node in nodes or []:
+            if isinstance(node, tuple) and len(node) == 2 and isinstance(node[0], Section):
+                sec_title = clean(node[0].title) or section_title
+                add(getattr(node[0], "href", None), sec_title)
+                walk(node[1], sec_title)
+            elif isinstance(node, Section):
+                sec_title = clean(node.title) or section_title
+                add(getattr(node, "href", None), sec_title)
+            elif isinstance(node, Link):
+                add(node.href, section_title or node.title)
+            elif isinstance(node, (list, tuple)):
+                walk(node, section_title)
+
+    walk(book.toc)
+    return titles
+
+
+def _looks_like_epub_packaging_title(title: str) -> bool:
+    return bool(re.search(r"_epub_c\d+(?:\.\d+)?_r\d+$", title, re.I))
+
+
 def extract_chapters(epub_path: Path) -> Tuple[str, List[Chapter]]:
     book = epub.read_epub(str(epub_path))
     title_meta = book.get_metadata("DC", "title")
     book_title = title_meta[0][0] if title_meta else epub_path.stem
+    toc_titles = _toc_title_map(book)
 
     items = [item for item in book.get_items_of_type(ITEM_DOCUMENT)]
     # Preserve spine order when possible.
@@ -645,8 +695,13 @@ def extract_chapters(epub_path: Path) -> Tuple[str, List[Chapter]]:
             title_tag = soup.find("title")
             if title_tag and title_tag.get_text(strip=True):
                 heading = normalize_text(title_tag.get_text(" ", strip=True))
-        title = heading or Path(item.file_name or f"chapter-{idx}").stem
+        file_name = item.file_name or f"chapter-{idx}"
+        toc_title = toc_titles.get(file_name) or toc_titles.get(Path(file_name).name)
+        fallback_title = Path(file_name).stem
+        title = heading or fallback_title
         title = normalize_text(title).split("\n")[0]
+        if toc_title and (not heading or _looks_like_epub_packaging_title(title) or title == fallback_title):
+            title = toc_title
         title = title[:120].strip() or f"Chapter {idx}"
         text = strip_leading_heading(text, title)
         if looks_like_table_of_contents(title, item.file_name or item.get_id(), text):
@@ -1021,6 +1076,69 @@ def encode_m4b(chapter_wavs: List[Path], chapters: List[Chapter], title: str, ou
     run(cmd)
 
 
+def cleanup_intermediate_audio_files(book_dir: Path, keep: set[Path]) -> dict:
+    """Remove chunk/chapter artifacts after the final M4B exists.
+
+    Status/manifest remain so the dashboard can still show chapter navigation,
+    but individual generated chunk/chapter files stop taking disk space and stop
+    being offered as download targets after the book-level file is complete.
+    """
+    keep_resolved = {p.resolve() for p in keep}
+    removed_files = 0
+    removed_dirs = 0
+    for child in (book_dir / "chapters", book_dir / "chunks"):
+        if child.exists():
+            shutil.rmtree(child, ignore_errors=True)
+            removed_dirs += 1
+    for suffix in (".chapters.txt", ".ffmetadata", ".concat.txt"):
+        for path in book_dir.glob(f"*{suffix}"):
+            try:
+                if path.resolve() not in keep_resolved:
+                    path.unlink(missing_ok=True)
+                    removed_files += 1
+            except OSError:
+                pass
+    return {"policy": "delete_intermediates_after_complete", "removed_dirs": removed_dirs, "removed_files": removed_files}
+
+
+def detect_completed_chapters(
+    book_dir: Path,
+    total_chunks_map: dict[int, int],
+    chapter_slugs: dict[int, str],
+    chapter_dir: Path | None = None,
+) -> set[int]:
+    chapters_dir = chapter_dir or (book_dir / "chapters")
+    if not chapters_dir.is_dir():
+        return set()
+
+    completed: set[int] = set()
+    for idx, slug in chapter_slugs.items():
+        expected = total_chunks_map.get(idx)
+        if expected is None:
+            continue
+        ch_dir = chapters_dir / slug
+        if not ch_dir.is_dir():
+            continue
+
+        existing = 0
+        for i in range(1, expected + 1):
+            wav = ch_dir / f"chunk-{i:03d}.wav"
+            if wav.exists() and wav.stat().st_size > 0:
+                existing += 1
+        if existing < expected:
+            continue
+
+        chapter_wav = chapters_dir / f"{slug}.wav"
+        chapter_m4a = chapters_dir / f"{slug}.m4a"
+        chapter_hls = ch_dir / f"chapter-{idx:03d}.m3u8"
+
+        if (chapter_wav.exists() and chapter_wav.stat().st_size > 0) or \
+           (chapter_m4a.exists() and chapter_m4a.stat().st_size > 0) or \
+           (chapter_hls.exists() and chapter_hls.stat().st_size > 0):
+            completed.add(idx)
+
+    return completed
+
 def process_book(
     epub_path: Path,
     outdir: Path,
@@ -1043,6 +1161,7 @@ def process_book(
     kokoro_workers: int,
     mode: str = "full",
     chapter_selection: Optional[str] = None,
+    output_retention: str = "delete_intermediates_after_complete",
 ) -> Path:
     title, chapters = extract_chapters(epub_path)
     chapters = parse_chapter_selection(chapter_selection, chapters)
@@ -1086,6 +1205,7 @@ def process_book(
         "kokoro_speed": kokoro_speed,
         "kokoro_workers": kokoro_workers,
         "max_chars": max_chars,
+        "output_retention": output_retention,
         "chapters": [],
     }
     run_started_wall = time.perf_counter()
@@ -1112,6 +1232,7 @@ def process_book(
         "kokoro_repo_id": kokoro_repo_id,
         "kokoro_speed": kokoro_speed,
         "kokoro_workers": kokoro_workers,
+        "output_retention": output_retention,
         "started_at": started_at,
         "updated_at": started_at,
         "phase": "initializing",
@@ -1215,7 +1336,64 @@ def process_book(
         )
 
     try:
+        # --- RESUME DETECTION ---
+        chapter_slug_map = {
+            ch.index: f"{ch.index:03d}-{slugify(ch.title)}"
+            for ch, _ in chapter_batches
+        }
+        chunk_count_map = {
+            ch.index: len(chunks)
+            for ch, chunks in chapter_batches
+        }
+        completed_chapters = detect_completed_chapters(
+            book_dir,
+            total_chunks_map=chunk_count_map,
+            chapter_slugs=chapter_slug_map,
+            chapter_dir=chapter_dir,
+        )
+        previously_completed = sorted(completed_chapters)
+        if previously_completed:
+            status["resumed_from_chapter"] = (
+                next(
+                    ch.index for ch, _ in chapter_batches
+                    if ch.index not in completed_chapters
+                )
+                if len(completed_chapters) < len(chapter_batches)
+                else None
+            )
+            status["previously_completed_chapters"] = previously_completed
+            for idx in previously_completed:
+                entry = status_by_chapter.get(idx)
+                if entry:
+                    entry["status"] = "completed"
+                    for mch in manifest.get("chapters", []):
+                        if mch.get("index") == idx:
+                            entry["rewrite_completed_chunks"] = len(mch.get("stats", {}).get("chunks", []))
+                            entry["tts_completed_chunks"] = len(mch.get("stats", {}).get("chunks", []))
+                            entry["hls_playlist"] = mch.get("hls_playlist")
+                            break
+                slug = chapter_slug_map.get(idx)
+                if slug:
+                    chapter_wav = chapter_dir / f"{slug}.wav"
+                    if chapter_wav.exists() and chapter_wav.stat().st_size > 0:
+                        for ch_obj, _ in chapter_batches:
+                            if ch_obj.index == idx:
+                                ch_obj.wav_path = chapter_wav
+                                break
+            status["progress"]["completed_chapters"] = len(previously_completed)
+            log(f"⏭️ Resume: {len(previously_completed)} chapters already complete")
+            save_status()
+            emit_event("pipeline_resumed",
+                       completed_chapters=previously_completed,
+                       starting_from=status.get("resumed_from_chapter"))
+        # --- END RESUME DETECTION ---
+
         for ch, chunks in chapter_batches:
+            if completed_chapters and ch.index in completed_chapters:
+                log(f"⏭️ Skipping completed chapter {ch.index}: {ch.title}")
+                if hasattr(ch, 'wav_path') and ch.wav_path and ch.wav_path.exists():
+                    chapter_wavs.append(ch.wav_path)
+                continue
             log(f"\n=== Chapter {ch.index}: {ch.title} ===")
             chapter_wall_start = time.perf_counter()
             chapter_slug = f"{ch.index:03d}-{slugify(ch.title)}"
@@ -1619,6 +1797,10 @@ def process_book(
     save_status()
     encode_m4b(chapter_wavs, chapters, title, out_m4b)
     manifest["output"] = str(out_m4b)
+    if output_retention == "delete_intermediates_after_complete":
+        removed = cleanup_intermediate_audio_files(book_dir, keep={out_m4b, manifest_path, status_path, events_path})
+        manifest["intermediates_removed"] = removed
+        status["intermediates_removed"] = removed
     write_json_atomic(manifest_path, manifest)
     status["phase"] = "done"
     status["current"]["phase"] = "done"
@@ -1651,6 +1833,7 @@ def main() -> int:
     parser.add_argument("--kokoro-workers", type=int, default=2, help="Number of persistent Kokoro worker processes")
     parser.add_argument("--kokoro-speed", type=float, default=1.0, help="Kokoro speech speed")
     parser.add_argument("--max-chars", type=int, default=1200, help="Max characters per narration chunk")
+    parser.add_argument("--output-retention", choices=["keep_all", "delete_intermediates_after_complete"], default="delete_intermediates_after_complete", help="Keep intermediate chapter/chunk files, or delete them after the final M4B is encoded")
     args = parser.parse_args()
 
     if not args.epub.exists():
@@ -1686,6 +1869,7 @@ def main() -> int:
         kokoro_workers=args.kokoro_workers,
         mode=args.mode,
         chapter_selection=args.chapters,
+        output_retention=args.output_retention,
     )
     log(f"\nDone: {out}")
     return 0

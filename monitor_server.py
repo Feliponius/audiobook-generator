@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parent
 DASHBOARD_PATH = ROOT / "dashboard" / "index.html"
 DASHBOARD_STATIC_ROUTES = {
     "/manifest.webmanifest": ROOT / "dashboard" / "manifest.webmanifest",
+    "/sw.js": ROOT / "dashboard" / "sw.js",
     "/assets/app-icon.svg": ROOT / "dashboard" / "assets" / "app-icon.svg",
     "/assets/app-icon-192.png": ROOT / "dashboard" / "assets" / "app-icon-192.png",
     "/assets/app-icon-512.png": ROOT / "dashboard" / "assets" / "app-icon-512.png",
@@ -385,7 +386,7 @@ DEFAULT_APP_SETTINGS: dict = {
     "kokoro_workers": 2,
     "rewrite_policy": "script-only",
     "hls_live": True,
-    "output_retention": "keep_all",
+    "output_retention": "delete_intermediates_after_complete",
 }
 
 REWRITE_POLICIES = frozenset({"full", "selective", "script-only"})
@@ -895,6 +896,93 @@ def read_json(path: Path, default=None):
         return default
 
 
+def _looks_like_epub_packaging_title(title: object) -> bool:
+    return bool(re.search(r"_epub_c\d+(?:\.\d+)?_r\d+$", str(title or ""), re.I))
+
+
+def _epub_toc_title_map(epub_path: Path) -> dict[str, str]:
+    try:
+        from ebooklib import epub
+        from ebooklib.epub import Link, Section
+    except Exception:
+        return {}
+    try:
+        book = epub.read_epub(str(epub_path))
+    except Exception:
+        return {}
+    titles: dict[str, str] = {}
+
+    def clean(value: object) -> str:
+        return re.sub(r"\s+", " ", str(value or "")).strip()
+
+    def add(href: object, title: object) -> None:
+        t = clean(title)
+        if not href or not t:
+            return
+        key = str(href).split("#", 1)[0]
+        if key and key not in titles:
+            titles[key] = t
+            titles[Path(key).name] = t
+            titles[Path(key).stem] = t
+
+    def walk(nodes, section_title: str | None = None) -> None:
+        for node in nodes or []:
+            if isinstance(node, tuple) and len(node) == 2 and isinstance(node[0], Section):
+                sec_title = clean(node[0].title) or section_title
+                add(getattr(node[0], "href", None), sec_title)
+                walk(node[1], sec_title)
+            elif isinstance(node, Section):
+                sec_title = clean(node.title) or section_title
+                add(getattr(node, "href", None), sec_title)
+            elif isinstance(node, Link):
+                add(node.href, section_title or node.title)
+            elif isinstance(node, (list, tuple)):
+                walk(node, section_title)
+
+    walk(book.toc)
+    return titles
+
+
+def _display_title_for_chapter(chapter: dict, toc_titles: dict[str, str]) -> str:
+    raw = str(chapter.get("title") or "").strip()
+    slug = str(chapter.get("slug") or "")
+    source = str(chapter.get("source") or "")
+    candidates = [source, Path(source).name, Path(source).stem, raw, slug]
+    if slug:
+        # Slugs are like 008-benn-9781595550552-epub-c11-r1. Convert back to
+        # the publisher's source stem when possible.
+        without_index = re.sub(r"^\d{3}-", "", slug)
+        candidates.extend([without_index, without_index.replace("-", "_"), without_index.replace("-", "_") + ".html"])
+    for key in candidates:
+        if key in toc_titles:
+            return toc_titles[key]
+    if raw and not _looks_like_epub_packaging_title(raw):
+        return raw
+    idx = chapter.get("index")
+    return f"Chapter {idx}" if idx is not None else (raw or "Chapter")
+
+
+def apply_epub_display_titles(summary: dict) -> None:
+    source = summary.get("source")
+    if not source:
+        return
+    epub_path = Path(str(source))
+    if not epub_path.is_file():
+        return
+    toc_titles = _epub_toc_title_map(epub_path)
+    if not toc_titles:
+        return
+    for chapter in summary.get("chapters", []) or []:
+        if isinstance(chapter, dict):
+            chapter["raw_title"] = chapter.get("title")
+            chapter["title"] = _display_title_for_chapter(chapter, toc_titles)
+    cur = summary.get("current")
+    if isinstance(cur, dict):
+        fake = {"index": cur.get("chapter_index"), "title": cur.get("chapter_title"), "slug": cur.get("chapter_slug")}
+        cur["raw_chapter_title"] = cur.get("chapter_title")
+        cur["chapter_title"] = _display_title_for_chapter(fake, toc_titles)
+
+
 def annotate_chapter_timeline(chapters: list[dict] | None) -> list[dict]:
     if not isinstance(chapters, list):
         return []
@@ -966,6 +1054,118 @@ def merge_app_settings(base: dict, body: dict) -> dict:
     elif "rewrite_policy" in body:
         cur["rewrite_policy"] = DEFAULT_APP_SETTINGS["rewrite_policy"]
     return cur
+
+
+# ── Voice list / sample ──────────────────────────────────────────────
+
+_VOICE_LIST_CACHE: list[dict] | None = None  # never changes at runtime
+
+
+def get_voice_list() -> list[dict]:
+    """All Kokoro-82M voices with metadata. Cached in memory after first call."""
+    global _VOICE_LIST_CACHE
+    if _VOICE_LIST_CACHE is not None:
+        return _VOICE_LIST_CACHE
+
+    LANG_MAP: dict[str, str] = {
+        "a": "American English", "b": "British English",
+        "e": "Spanish", "f": "French", "h": "Hindi",
+        "i": "Italian", "j": "Japanese", "p": "Brazilian Portuguese",
+        "z": "Mandarin Chinese",
+    }
+    voices: list[dict] = []
+    for code in ("a", "b", "e", "f", "h", "i", "j", "p", "z"):
+        lang = LANG_MAP.get(code, f"Unknown ({code})")
+        lang_voices = _KNOWN_VOICES.get(code, [])
+        for name in lang_voices:
+            gender = "female" if len(name) > 1 and name[1] == "f" else "male"
+            voices.append({
+                "id": name,
+                "name": name,
+                "language": lang,
+                "gender": gender,
+                "label": _voice_label(name, lang, gender),
+            })
+    _VOICE_LIST_CACHE = voices
+    return voices
+
+
+def _voice_label(voice_id: str, lang: str, gender: str) -> str:
+    display = voice_id.replace("_", " ").title()
+    return f"{display} — {lang} · {gender.title()}"
+
+
+_KNOWN_VOICES: dict[str, list[str]] = {
+    "a": [
+        "af_alloy", "af_aoede", "af_bella", "af_heart", "af_jessica",
+        "af_kore", "af_nicole", "af_nova", "af_river", "af_sarah", "af_sky",
+        "am_adam", "am_echo", "am_eric", "am_fenrir", "am_liam",
+        "am_michael", "am_onyx", "am_puck", "am_santa",
+    ],
+    "b": [
+        "bf_alice", "bf_emma", "bf_isabella", "bf_lily",
+        "bm_daniel", "bm_fable", "bm_george", "bm_lewis",
+    ],
+    "e": ["ef_dora", "em_alex", "em_santa"],
+    "f": ["ff_siwis"],
+    "h": ["hf_alpha", "hf_beta", "hm_omega", "hm_psi"],
+    "i": ["if_sara", "im_nicola"],
+    "j": ["jf_alpha", "jf_gongitsune", "jf_nezumi", "jf_tebukuro", "jm_kumo"],
+    "p": ["pf_dora", "pm_alex", "pm_santa"],
+    "z": [
+        "zf_xiaobei", "zf_xiaoni", "zf_xiaoxiao", "zf_xiaoyi",
+        "zm_yunjian", "zm_yunxi", "zm_yunxia", "zm_yunyang",
+    ],
+}
+
+
+def serve_voice_sample(handler, voice: str) -> None:
+    """Generate a short WAV sample of *voice* and stream it to the client."""
+    import subprocess
+    import tempfile
+
+    root = Path(handler.root) if hasattr(handler, "root") else Path.cwd()
+    script = root / "generate_voice_sample.py"
+    vpy = _resolve_venv_python(root)
+
+    tmpdir = tempfile.mkdtemp(prefix="kokoro_sample_")
+    out_wav = Path(tmpdir) / f"{voice}_sample.wav"
+    try:
+        proc = subprocess.run(
+            [vpy, str(script), "--voice", voice, "--output", str(out_wav)],
+            capture_output=True, text=True, timeout=120,
+            env=_venv_env(root),
+        )
+        if proc.returncode != 0 or not out_wav.is_file():
+            handler._send_json(
+                {"error": "sample generation failed", "stderr": proc.stderr[:500]},
+                status=500,
+            )
+            return
+        handler._serve_file(out_wav)
+    except subprocess.TimeoutExpired:
+        handler._send_json({"error": "sample generation timed out"}, status=504)
+    finally:
+        _safe_rmtree(out_wav.parent)
+
+
+def _resolve_venv_python(root: Path) -> str:
+    candidate = root / "venv" / "bin" / "python"
+    if candidate.is_file() and os.access(candidate, os.X_OK):
+        return str(candidate)
+    return sys.executable
+
+
+def _venv_env(root: Path) -> dict:
+    env = dict(os.environ)
+    venv_dir = root / "venv"
+    if venv_dir.is_dir():
+        env["VIRTUAL_ENV"] = str(venv_dir)
+        env.pop("PYTHONHOME", None)
+        env.pop("PYTHONPATH", None)
+        venv_bin = str((venv_dir / "bin").resolve())
+        env["PATH"] = venv_bin + os.pathsep + env.get("PATH", "")
+    return env
 
 
 def iso_mtime(path: Path) -> str:
@@ -1207,11 +1407,14 @@ def run_summary(book_dir: Path) -> dict:
                 chapter["hls_playlist"] = record.get("hls_playlist")
             if record.get("duration_s") is not None:
                 chapter["duration_s"] = record.get("duration_s")
+        apply_epub_display_titles(status)
         status["chapters"] = annotate_chapter_timeline(status.get("chapters", []) or [])
         if manifest.get("output"):
             status["output"] = manifest.get("output")
         return status
-    return infer_legacy_status(book_dir)
+    summary = infer_legacy_status(book_dir)
+    apply_epub_display_titles(summary)
+    return summary
 
 
 def _collect_book_run_dirs(parent: Path, runs: list[Path]) -> None:
@@ -1323,6 +1526,8 @@ class Handler(BaseHTTPRequestHandler):
             return "image/svg+xml; charset=utf-8"
         if path.suffix == ".png":
             return "image/png"
+        if path.suffix == ".js":
+            return "text/javascript; charset=utf-8"
         return "application/octet-stream"
 
     def _parse_range_header(self, size: int) -> tuple[int, int] | None:
@@ -1499,6 +1704,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/settings":
             self._send_json({"settings": read_app_settings(self.root)})
+            return
+        if parsed.path == "/api/voices":
+            self._send_json({"voices": get_voice_list()})
+            return
+        if parsed.path == "/api/voices/sample":
+            qs = parse_qs(parsed.query)
+            voice = (qs.get("voice") or [None])[0]
+            if not voice or not str(voice).strip():
+                self._send_json({"error": "missing voice parameter"}, status=400)
+                return
+            serve_voice_sample(self, str(voice).strip())
             return
         if parsed.path == "/api/library/book-chat/index-status":
             qs = parse_qs(parsed.query)
@@ -1985,8 +2201,9 @@ class Handler(BaseHTTPRequestHandler):
                 str(kok_workers),
                 "--rewrite-policy",
                 rewrite_policy,
+                "--output-retention",
+                str(app_settings.get("output_retention") or "delete_intermediates_after_complete"),
             ]
-            # app_settings["output_retention"] is not passed through: the pipeline has no retention hook yet.
             try:
                 logf = open(log_path, "ab")
             except OSError as e:
@@ -2234,6 +2451,11 @@ class Handler(BaseHTTPRequestHandler):
                 model = DEFAULT_ANSWER_MODEL
             else:
                 model = model.strip()
+            author_voice = body.get("author_voice")
+            if author_voice is not None:
+                author_voice = bool(author_voice)
+            else:
+                author_voice = False
             from book_chat.service import BookChatNotFoundError, query_passages
 
             try:
@@ -2246,6 +2468,7 @@ class Handler(BaseHTTPRequestHandler):
                     use_model=use_model,
                     model=model,
                     action=action,
+                    author_voice=author_voice,
                 )
             except BookChatNotFoundError as exc:
                 self._send_json({"error": str(exc), "book_id": book_id.strip()}, status=404)

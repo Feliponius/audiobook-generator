@@ -202,7 +202,7 @@ class DashboardShellTests(unittest.TestCase):
         html = DASHBOARD.read_text(encoding="utf-8")
         self.assertIn("num.textContent = ch.index;", html)
         self.assertIn("ch.title || ('Chapter ' + ch.index)", html)
-        self.assertIn("'Ch. ' + b.listen_chapter_index + ' · '", html)
+        self.assertIn("parts.push('Ch. ' + chapterIndex)", html)
         self.assertNotIn("ch.index + 1", html)
         self.assertNotIn("listen_chapter_index + 1", html)
 

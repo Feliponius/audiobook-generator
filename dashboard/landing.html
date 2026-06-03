@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1210">
+<title>lifeos</title>
+<style>
+  :root, [data-theme="dark"] {
+    --bg0: #0a1210; --bg1: #0f1f18; --surface: #142922;
+    --border: rgba(232,245,237,0.08);
+    --text: #eef7f0; --muted: #8fb0a2;
+    --accent: #5ecf9a; --accent2: #3da97f;
+    --radius: 20px;
+    --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: var(--font);
+    background: radial-gradient(120% 80% at 50% -10%, #1a332b 0%, var(--bg0) 55%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .hub {
+    width: min(100%, 480px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hub h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 4px;
+  }
+  .hub .subtitle {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+  }
+  .service-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .service-card:hover {
+    border-color: rgba(94,207,154,0.35);
+    background: rgba(94,207,154,0.05);
+  }
+  .service-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: rgba(94,207,154,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .service-info { flex: 1; min-width: 0; }
+  .service-name { font-weight: 700; font-size: 0.95rem; }
+  .service-desc { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+  .service-arrow { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; }
+  .status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 999px;
+    background: var(--accent);
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="hub">
+  <h1>lifeos</h1>
+  <p class="subtitle">Services running on this machine</p>
+
+  <a class="service-card" href="https://lifeos.taild166b7.ts.net:4443/">
+    <div class="service-icon">📚</div>
+    <div class="service-info">
+      <div class="service-name"><span class="status-dot"></span>Audiobook Library</div>
+      <div class="service-desc">Read EPUBs and listen with Kokoro narration</div>
+    </div>
+    <span class="service-arrow">→</span>
+  </a>
+
+  <!-- Add more services here as they come online -->
+</div>
+</body>
+</html>

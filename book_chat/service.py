@@ -248,6 +248,7 @@ def build_book_chat_prompt(
     hits: list[dict[str, Any]],
     *,
     action: str = DEFAULT_BOOK_CHAT_ACTION,
+    author_voice: bool = False,
 ) -> str:
     action = normalize_answer_action(action)
     context_blocks = []
@@ -257,6 +258,13 @@ def build_book_chat_prompt(
         )
     passages_section = "\n\n".join(context_blocks) if context_blocks else "(No passages retrieved.)"
     action_instruction = _ACTION_INSTRUCTIONS[action]
+    voice_note = ""
+    if author_voice:
+        voice_note = (
+            "This answer should use an author-inspired voice: adopt the tone, style, and perspective "
+            "of the book's author as reflected in the passages. Clearly label that this is an "
+            "interpretation/simulation, not the actual author speaking.\n"
+        )
     return (
         "You are a kind, direct, practical, and reflective book-reading companion.\n"
         "Answer using ONLY the retrieved book passages below plus the user's question.\n"
@@ -267,7 +275,8 @@ def build_book_chat_prompt(
         "Include citations in your answer, preferably parenthetical source tags like "
         "[passage_...] or a final Sources section.\n\n"
         f"Answer mode: {action}\n"
-        f"Mode instructions: {action_instruction}\n\n"
+        f"Mode instructions: {action_instruction}\n"
+        f"{voice_note}\n"
         f"Question: {question.strip()}\n\n"
         f"Passages:\n{passages_section}"
     )
@@ -385,6 +394,7 @@ def query_passages(
     use_model: bool = False,
     model: str = DEFAULT_ANSWER_MODEL,
     action: str = DEFAULT_BOOK_CHAT_ACTION,
+    author_voice: bool = False,
 ) -> dict[str, Any]:
     path = index_path_for_book(root, book_id)
     passages = read_passages(path)
@@ -401,7 +411,7 @@ def query_passages(
     model_provider = RETRIEVAL_ONLY_PROVIDER
 
     if use_model:
-        prompt = build_book_chat_prompt(question, hits, action=normalized_action)
+        prompt = build_book_chat_prompt(question, hits, action=normalized_action, author_voice=author_voice)
         gateway = ask_via_hermes_codex(prompt, model=model)
         model_provider = gateway.provider
         fallback_used = gateway.fallback_used

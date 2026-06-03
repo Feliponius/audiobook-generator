@@ -71,391 +71,11 @@
       margin: 0 auto;
       padding: env(safe-area-inset-top) 16px calc(var(--app-bottom-pad, 88px) + env(safe-area-inset-bottom));
       min-height: 100vh;
-      overflow-x: hidden;
     }
-    @media (min-width: 768px) {
-      .app {
-        width: 100%;
-        max-width: 1200px;
-        padding: 24px 32px calc(var(--app-bottom-pad, 88px));
-        overflow-x: hidden;
-      }
-    }
-
-    /* === View Mode Toggle === */
-    .view-toggle {
-      display: inline-flex;
-      gap: 4px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 3px;
-      margin-left: auto;
-    }
-    .view-toggle button {
-      width: 36px; height: 36px;
-      border: none; border-radius: 10px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 1.1rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s, color 0.15s;
-    }
-    .view-toggle button.active {
-      background: var(--accent);
-      color: var(--accent-contrast);
-    }
-
-    /* === Netflix Carousel Rows === */
-    .carousel-section {
-      margin: 20px 0 4px;
-    }
-    .carousel-section:first-of-type { margin-top: 4px; }
-    .carousel-label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--muted);
-      margin: 0 0 8px 4px;
-      padding: 0;
-    }
-    .carousel-row {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      padding: 4px 0 14px;
-      scrollbar-width: none;
-      scroll-padding: 16px;
-    }
-    @media (min-width: 768px) {
-      .carousel-row {
-        gap: 14px;
-        padding: 4px 0 14px;
-        scroll-padding: 32px;
-        flex-wrap: nowrap;
-      }
-    }
-    .carousel-row::-webkit-scrollbar { display: none; }
-
-    .carousel-card {
-      flex: 0 0 auto;
-      width: 115px;
-      scroll-snap-align: start;
-      cursor: pointer;
-      border: none;
-      background: none;
-      padding: 0;
-      text-align: center;
-      font: inherit;
-      color: inherit;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      border-radius: 12px;
-      display: block;
-      align-items: initial;
-      justify-content: initial;
-      gap: 0;
-    }
-    .carousel-card:first-child { margin-left: 16px; }
-    .carousel-card:last-child { margin-right: 16px; }
-    @media (min-width: 420px) {
-      .carousel-card { width: 125px; }
-    }
-    @media (min-width: 768px) {
-      .carousel-card { width: 150px; }
-      .carousel-card:first-child { margin-left: 32px; }
-      .carousel-card:last-child { margin-right: 32px; }
-      .carousel-card:hover {
-        transform: translateY(-6px) scale(1.04);
-      }
-    }
-    @media (min-width: 1024px) {
-      .carousel-card { width: 165px; }
-    }
-
-    .carousel-cover-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 2/3;
-      border-radius: 12px;
-      overflow: hidden;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.22);
-      transition: box-shadow 0.3s ease;
-    }
-    @media (min-width: 768px) {
-      .carousel-card:hover .carousel-cover-wrap {
-        box-shadow: 0 12px 36px rgba(94, 207, 154, 0.16);
-      }
-    }
-    .carousel-cover-wrap img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .carousel-cover-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.2rem;
-      color: var(--muted);
-      width: 100%; height: 100%;
-      background: var(--surface2);
-    }
-    .carousel-cover-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%);
-      border-radius: 12px;
-      display: flex;
-      align-items: flex-end;
-      padding: 8px;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      pointer-events: none;
-    }
-    @media (min-width: 768px) {
-      .carousel-card:hover .carousel-cover-overlay { opacity: 1; }
-    }
-    .carousel-cover-overlay .pill {
-      font-size: 0.62rem;
-      padding: 3px 7px;
-    }
-
-    .carousel-card-title {
-      font-size: 0.8rem;
-      font-weight: 650;
-      line-height: 1.25;
-      margin-top: 7px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      width: 100%;
-    }
-    .carousel-card-author {
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 100%;
-    }
-    .carousel-card-progress {
-      height: 3px;
-      border-radius: 999px;
-      background: var(--border);
-      margin-top: 6px;
-      overflow: hidden;
-      width: 100%;
-    }
-    .carousel-card-progress span {
-      display: block;
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent2), var(--accent));
-      border-radius: 999px;
-    }
-
-    /* === Hero Banner === */
-    .hero-banner {
-      position: relative;
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin: 0 0 20px;
-      aspect-ratio: 16/7;
-      min-height: 200px;
-      max-height: 380px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      box-shadow: var(--shadow);
-    }
-    @media (min-width: 768px) {
-      .hero-banner { aspect-ratio: 21/7; min-height: 280px; }
-    }
-    .hero-banner img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .hero-gradient {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, transparent 30%, rgba(10,18,16,0.35) 60%, var(--bg0) 95%);
-    }
-    .hero-content {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      padding: 24px 20px;
-    }
-    @media (min-width: 768px) {
-      .hero-content { padding: 32px 28px; }
-    }
-    .hero-content .hero-pill {
-      display: inline-block;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-weight: 700;
-      padding: 5px 10px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: var(--accent-contrast);
-      margin-bottom: 10px;
-    }
-    .hero-content h2 {
-      margin: 0;
-      font-size: 1.4rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1.15;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    }
-    @media (min-width: 768px) {
-      .hero-content h2 { font-size: 2rem; }
-    }
-    .hero-content .hero-author {
-      margin-top: 6px;
-      font-size: 0.88rem;
-      color: rgba(255,255,255,0.75);
-      text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-    }
-    @media (min-width: 768px) {
-      .hero-content .hero-author { font-size: 0.95rem; }
-    }
-
-    /* === Grid View === */
-    .grid-view {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 14px;
-      margin-top: 8px;
-    }
-    @media (min-width: 768px) {
-      .grid-view { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px; }
-    }
-    @media (min-width: 1024px) {
-      .grid-view { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 20px; }
-    }
-    .grid-card {
-      cursor: pointer;
-      border: none;
-      background: none;
-      padding: 0;
-      text-align: left;
-      font: inherit;
-      color: inherit;
-      border-radius: 14px;
-      transition: transform 0.2s ease;
-      display: block;
-      align-items: initial;
-      justify-content: initial;
-      gap: 0;
-    }
-    @media (min-width: 768px) {
-      .grid-card:hover { transform: translateY(-4px); }
-    }
-    .grid-card-cover {
-      width: 100%;
-      aspect-ratio: 2/3;
-      border-radius: 14px;
-      object-fit: cover;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-      display: block;
-    }
-    .grid-card-cover.placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.4rem;
-      color: var(--muted);
-    }
-    .grid-card-title {
-      font-size: 0.82rem;
-      font-weight: 650;
-      line-height: 1.2;
-      margin-top: 8px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .grid-card-author {
-      font-size: 0.74rem;
-      color: var(--muted);
-      margin-top: 3px;
-    }
-    .grid-card-pill {
-      font-size: 0.66rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 3px 7px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.06);
-      color: var(--muted);
-      display: inline-block;
-      margin-top: 6px;
-    }
-    .grid-card-pill.ready { color: #c5f5df; background: rgba(61, 169, 127, 0.18); }
-    .grid-card-pill.running { color: var(--mint); background: rgba(94, 207, 154, 0.12); }
-    .grid-card-pill.stalled { color: #3a3220; background: rgba(230, 200, 110, 0.22); }
-
-    /* === Desktop bottom nav to sidebar === */
-    @media (min-width: 768px) {
-      .bottom-nav {
-        position: fixed;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        right: auto;
-        bottom: auto;
-        flex-direction: column;
-        gap: 6px;
-        padding: 10px 6px;
-        border-radius: 0 16px 16px 0;
-        border-top: 1px solid var(--border);
-        border-left: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        background: color-mix(in srgb, var(--bg0) 92%, transparent);
-        z-index: 30;
-        width: auto;
-      }
-      .nav-tab {
-        flex: none;
-        max-width: none;
-        width: 52px;
-        height: 52px;
-        padding: 4px 2px;
-        font-size: 0.6rem;
-        gap: 1px;
-      }
-      .nav-tab .nav-label {
-        font-size: 0.55rem;
-      }
-      body.has-global-player { --app-bottom-pad: 120px; }
-    }
-    @media (min-width: 768px) and (max-width: 1023px) {
-      .app { padding-left: 80px; }
-    }
-    @media (min-width: 1024px) {
-      .app { padding-left: 88px; }
-    }
-    @media (max-width: 767px) {
-      body.has-global-player { --app-bottom-pad: 158px; }
-      body.player-nav-hidden.has-global-player { --app-bottom-pad: 108px; }
-      body.player-nav-hidden .global-player {
-        bottom: calc(12px + env(safe-area-inset-bottom));
-      }
+    body.has-global-player { --app-bottom-pad: 158px; }
+    body.player-nav-hidden.has-global-player { --app-bottom-pad: 108px; }
+    body.player-nav-hidden .global-player {
+      bottom: calc(12px + env(safe-area-inset-bottom));
     }
     body.player-sheet-open { overflow: hidden; }
     header.top {
@@ -654,27 +274,6 @@
     }
     .star.on { opacity: 1; }
 
-    /* === Icon system === */
-    .icon {
-      width: 1.2em; height: 1.2em;
-      vertical-align: -0.2em;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      fill: none;
-      flex-shrink: 0;
-    }
-    .icon-sm { width: 1em; height: 1em; }
-    .icon-lg { width: 1.5em; height: 1.5em; }
-    .icon-xl { width: 2em; height: 2em; }
-    .icon-btn .icon, .nav-tab .icon, .play-fab .icon, .bookmark-fab .icon {
-      width: 1.25em; height: 1.25em;
-      vertical-align: middle;
-    }
-    .nav-tab .icon { display: block; margin: 0 auto 2px; }
-    .nav-tab.active .icon { stroke: var(--accent); }
-
     /* Book detail */
     .book-hero {
       text-align: center;
@@ -868,9 +467,9 @@
       border: 1px solid transparent;
       background: transparent;
       color: var(--text);
+      font: inherit;
       text-align: left;
       transition: background 0.15s, border-color 0.15s;
-      user-select: none;
     }
     .toc-row:last-child { margin-bottom: 0; }
     .toc-row .toc-num {
@@ -918,36 +517,12 @@
       color: var(--muted);
       opacity: 0.55;
       cursor: default;
-      pointer-events: none;
     }
     .toc-row.locked .toc-status { color: var(--muted); opacity: 0.7; }
     .toc-row.active {
       outline: 2px solid var(--accent);
       outline-offset: -2px;
     }
-
-    /* Offline save buttons */
-    .btn-offline-save,
-    .btn-offline-saved {
-      font: inherit;
-      font-size: 0.72rem;
-      padding: 4px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      flex-shrink: 0;
-      white-space: nowrap;
-      margin-left: auto;
-    }
-    .btn-offline-save:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-offline-saved {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .btn-offline-saved:hover { border-color: var(--danger); color: var(--danger); }
-
     .pulse {
       width: 8px;
       height: 8px;
@@ -1409,49 +984,43 @@
       font-family: inherit;
     }
 
-    @media (max-width: 767px) {
-      .bottom-nav {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 30;
-        padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
-        background: color-mix(in srgb, var(--bg0) 97%, transparent);
-        border-top: 1px solid var(--border);
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        backdrop-filter: blur(14px);
-      }
-      .nav-tab {
-        flex: 1;
-        max-width: 120px;
-        border: none;
-        background: transparent;
-        color: var(--muted);
-        font: inherit;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 8px 6px;
-        border-radius: 12px;
-        cursor: pointer;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-      }
-      .nav-tab .nav-label {
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.02em;
-        line-height: 1;
-      }
-      .nav-tab.active {
-        color: var(--accent);
-        background: color-mix(in srgb, var(--accent) 14%, transparent);
-      }
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--bg0) 97%, transparent);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      backdrop-filter: blur(14px);
+    }
+    .nav-tab {
+      flex: 1;
+      max-width: 120px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 8px 6px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .nav-tab .nav-icon {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 2px;
+      line-height: 1;
+    }
+    .nav-tab.active {
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
     }
 
     /* Global persistent player */
@@ -2061,70 +1630,37 @@
   </div>
 
   <div id="libraryScreen" class="app">
-    <header class="top" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:0">
-        <h1>Your books</h1>
-        <p>Read EPUBs and listen as Kokoro narrates.</p>
-      </div>
-      <div class="view-toggle" id="viewToggle" role="group" aria-label="Library view">
-        <button type="button" class="active" data-view="carousel" data-icon="carousel" title="Carousel"></button>
-        <button type="button" data-view="grid" data-icon="grid" title="Grid"></button>
-        <button type="button" data-view="list" data-icon="list" title="List"></button>
+    <header class="top">
+      <h1>Your books</h1>
+      <p>Read EPUBs and listen as Kokoro narrates.</p>
+      <div class="row-actions">
+        <label class="btn btn-primary">
+          Upload EPUB
+          <input id="epubInput" type="file" accept=".epub,application/epub+zip">
+        </label>
       </div>
     </header>
-    <div class="row-actions" style="margin-top:6px">
-      <label class="btn btn-primary">
-        Upload EPUB
-        <input id="epubInput" type="file" accept=".epub,application/epub+zip">
-      </label>
+    <div class="filters" id="filterRow">
+      <button type="button" class="filter-chip on" data-filter="all">All</button>
+      <button type="button" class="filter-chip" data-filter="fav">Favorites</button>
+      <button type="button" class="filter-chip" data-filter="active">In progress</button>
     </div>
-
-    <!-- Hero Banner -->
-    <div id="heroBanner" class="hero-banner hidden"></div>
-
-    <!-- Carousel View -->
-    <div id="carouselView">
-      <div id="carouselContinue" class="carousel-section hidden">
-        <div class="carousel-label">Continue</div>
-        <div class="carousel-row" id="carouselContinueRow"></div>
-      </div>
-      <div class="carousel-section">
-        <div class="carousel-label">Your Library</div>
-        <div class="carousel-row" id="carouselAllRow"></div>
-      </div>
-      <div id="carouselFavorites" class="carousel-section hidden">
-        <div class="carousel-label">Favorites</div>
-        <div class="carousel-row" id="carouselFavRow"></div>
-      </div>
+    <div class="library-toolbar">
+      <input type="search" class="library-search" id="librarySearch" placeholder="Search by title or author…" autocomplete="off">
+      <select class="extra-select library-sort" id="librarySort">
+        <option value="recent">Most recent</option>
+        <option value="title">Title A–Z</option>
+        <option value="author">Author A–Z</option>
+        <option value="progress">In progress</option>
+      </select>
     </div>
-
-    <!-- Grid View -->
-    <div id="gridView" class="grid-view hidden"></div>
-
-    <!-- List View (original) -->
-    <div id="listView" class="hidden">
-      <div class="filters" id="filterRow">
-        <button type="button" class="filter-chip on" data-filter="all">All</button>
-        <button type="button" class="filter-chip" data-filter="fav">Favorites</button>
-        <button type="button" class="filter-chip" data-filter="active">In progress</button>
-      </div>
-      <div class="library-toolbar">
-        <input type="search" class="library-search" id="librarySearch" placeholder="Search by title or author…" autocomplete="off">
-        <select class="extra-select library-sort" id="librarySort">
-          <option value="recent">Most recent</option>
-          <option value="title">Title A–Z</option>
-          <option value="author">Author A–Z</option>
-          <option value="progress">In progress</option>
-        </select>
-      </div>
-      <div id="libraryCards" class="cards"></div>
-    </div>
+    <div id="libraryCards" class="cards"></div>
     <div id="libraryEmpty" class="empty hidden">No books yet — upload an EPUB to start.</div>
   </div>
 
   <div id="bookScreen" class="app hidden" data-book-detail-sections="collapsible-v1">
     <header class="app-bar">
-      <button type="button" class="icon-btn" id="bookBack" aria-label="Back" data-icon="chevron-left"></button>
+      <button type="button" class="icon-btn" id="bookBack" aria-label="Back">←</button>
     </header>
     <div class="book-hero">
       <img id="detailCover" class="cover-xl hidden" alt="">
@@ -2144,7 +1680,6 @@
     <div class="cta-stack">
       <button type="button" class="btn-primary" id="btnRead">Read</button>
       <button type="button" class="btn-secondary" id="btnBookChat">Ask this book</button>
-      <button type="button" class="btn-secondary" id="btnSaveEpub">💾 Save EPUB offline</button>
       <button type="button" class="btn-secondary" id="btnStart">Start audiobook</button>
       <button type="button" class="btn-secondary hidden" id="btnStop">Stop generation</button>
       <button type="button" class="btn-secondary hidden" id="btnPause">Pause generation</button>
@@ -2170,15 +1705,13 @@
         <span id="chapterSelectorSummary" class="detail-summary-text">No chapters yet</span>
       </summary>
       <div class="detail-section-body">
-        <p class="chapter-selector-note" id="chapterSelectorNote">Pick a chapter from the compact selector below. Colors stay consistent here: accent = ready, mint = generating now, muted = waiting.</p>
+        <p class="chapter-selector-note">Pick a chapter from the compact selector below. Colors stay consistent here: accent = ready, mint = generating now, muted = waiting.</p>
         <div class="chapter-selector-legend" aria-hidden="true">
           <span class="chapter-legend-chip ready">Ready</span>
           <span class="chapter-legend-chip generating"><span class="pulse"></span>Generating</span>
           <span class="chapter-legend-chip waiting">Waiting</span>
         </div>
         <div id="chapterListContainer"></div>
-        <div id="cacheStats" style="margin-top:10px;font-size:0.78rem;display:none"><span class="muted">📱 No chapters saved offline</span></div>
-        <div id="swDebug" style="margin-top:4px;font-size:0.68rem;font-family:monospace;color:var(--muted);line-height:1.5;display:none"></div>
       </div>
     </details>
     <details class="detail-section diag" id="genDetails">
@@ -2214,7 +1747,7 @@
 
   <div id="bookChatScreen" class="app hidden" data-book-chat-ui="v1">
     <header class="app-bar">
-      <button type="button" class="icon-btn" id="bookChatBack" aria-label="Back" data-icon="chevron-left"></button>
+      <button type="button" class="icon-btn" id="bookChatBack" aria-label="Back">←</button>
     </header>
     <h1 id="bookChatTitle" style="margin:0 0 4px;font-size:1.2rem">Book Chat</h1>
     <p class="muted" id="bookChatSubtitle" style="margin:0 0 12px;font-size:0.86rem">Ask questions about indexed passages for this book.</p>
@@ -2313,17 +1846,8 @@
           </div>
         </div>
       </div>
-      <label for="setVoice">Kokoro voice</label>
-      <div id="voiceBrowser" style="margin-top:2px">
-        <select id="setVoice" name="kokoro_voice" autocomplete="off" style="width:100%;font:inherit;font-size:0.92rem;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
-          <option value="">Loading voices…</option>
-        </select>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-          <button type="button" id="btnVoiceSample" class="btn-secondary" style="font-size:0.82rem;padding:8px 14px" disabled>▶ Sample</button>
-          <span id="voiceSampleStatus" style="font-size:0.76rem;color:var(--muted)"></span>
-        </div>
-        <audio id="voiceSampleAudio" style="display:none" preload="none"></audio>
-      </div>
+      <label for="setVoice">Kokoro voice id</label>
+      <input type="text" id="setVoice" name="kokoro_voice" autocomplete="off" placeholder="af_heart">
       <label for="setRetention">Output retention</label>
       <select id="setRetention" name="output_retention">
         <option value="keep_all">Keep all generated outputs</option>
@@ -2339,7 +1863,6 @@
       </details>
       <button type="submit" class="btn-primary" style="width:100%;margin-top:18px">Save settings</button>
     </form>
-    <div id="swDebugSettings" style="margin-top:16px;padding:10px 12px;background:var(--surface);border-radius:10px;font-size:0.68rem;font-family:monospace;color:var(--muted);line-height:1.6;display:none"></div>
   </div>
 
   <div id="globalPlayer" class="global-player hidden" aria-live="polite">
@@ -2352,14 +1875,14 @@
         <div class="mini-meter"><span id="miniMeterFill"></span></div>
       </div>
       <div class="player-mini-actions">
-        <button type="button" class="mini-nav-fab" id="miniPrevCh" aria-label="Previous chapter" title="Previous chapter" data-icon="skip-back"></button>
+        <button type="button" class="mini-nav-fab" id="miniPrevCh" aria-label="Previous chapter" title="Previous chapter">⏮</button>
         <button type="button" class="bookmark-fab" id="miniBookmarkBtn" aria-label="Save listening bookmark" title="Save listening bookmark">
           <svg class="bookmark-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6.75 3h10.5a2.25 2.25 0 0 1 2.25 2.25v15.2a.75.75 0 0 1-1.2.6L12 16.5l-6.3 4.55a.75.75 0 0 1-1.2-.6V5.25A2.25 2.25 0 0 1 6.75 3Z"></path>
           </svg>
         </button>
-        <button type="button" class="play-fab" id="miniPlayBtn" aria-label="Play or pause" data-icon="play"></button>
-        <button type="button" class="mini-nav-fab" id="miniNextCh" aria-label="Next chapter" title="Next chapter" data-icon="skip-forward"></button>
+        <button type="button" class="play-fab" id="miniPlayBtn" aria-label="Play or pause">▶</button>
+        <button type="button" class="mini-nav-fab" id="miniNextCh" aria-label="Next chapter" title="Next chapter">⏭</button>
       </div>
     </div>
   </div>
@@ -2391,9 +1914,9 @@
       </div>
       <div class="sheet-transport" role="group" aria-label="Playback controls">
         <button type="button" class="sheet-t-btn" id="sheetSkipBack" aria-label="Back 15 seconds">15</button>
-        <button type="button" class="sheet-t-btn" id="sheetPrevCh" aria-label="Previous chapter" data-icon="skip-back"></button>
-        <button type="button" class="sheet-t-btn main" id="sheetPlayBtn" aria-label="Play or pause" data-icon="play"></button>
-        <button type="button" class="sheet-t-btn" id="sheetNextCh" aria-label="Next chapter" data-icon="skip-forward"></button>
+        <button type="button" class="sheet-t-btn" id="sheetPrevCh" aria-label="Previous chapter">⏮</button>
+        <button type="button" class="sheet-t-btn main" id="sheetPlayBtn" aria-label="Play or pause">▶</button>
+        <button type="button" class="sheet-t-btn" id="sheetNextCh" aria-label="Next chapter">⏭</button>
         <button type="button" class="sheet-t-btn" id="sheetSkipFwd" aria-label="Forward 30 seconds">30</button>
       </div>
       <div class="sheet-secondary-actions">
@@ -2443,46 +1966,21 @@
           <path d="M6.75 3h10.5a2.25 2.25 0 0 1 2.25 2.25v15.2a.75.75 0 0 1-1.2.6L12 16.5l-6.3 4.55a.75.75 0 0 1-1.2-.6V5.25A2.25 2.25 0 0 1 6.75 3Z"></path>
         </svg>
       </button>
-      <button type="button" class="play-fab" id="readerDockPlay" aria-label="Play or pause" data-icon="play"></button>
+      <button type="button" class="play-fab" id="readerDockPlay" aria-label="Play or pause">▶</button>
     </div>
   </div>
 
   <nav class="bottom-nav" id="bottomNav" aria-label="Main">
-    <button type="button" class="nav-tab active" data-nav="library" data-icon="book"><span class="nav-label">Library</span></button>
-    <button type="button" class="nav-tab" data-nav="now" data-icon="play"><span class="nav-label">Now playing</span></button>
-    <button type="button" class="nav-tab" data-nav="settings" data-icon="settings"><span class="nav-label">Settings</span></button>
+    <button type="button" class="nav-tab active" data-nav="library"><span class="nav-icon">📚</span>Library</button>
+    <button type="button" class="nav-tab" data-nav="now"><span class="nav-icon">▶</span>Now playing</button>
+    <button type="button" class="nav-tab" data-nav="settings"><span class="nav-icon">⚙</span>Settings</button>
   </nav>
 
   <script>
     const $ = (id) => document.getElementById(id);
-
-    // --- Icon system ---
-    // Lucide-style outline icons. stroke:currentColor adapts to theme.
-    const ICONS = {
-      book:       '<svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5A1.5 1.5 0 0 1 5 20.5v0A1.5 1.5 0 0 1 6.5 19H20"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>',
-      play:       '<svg class="icon" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
-      pause:      '<svg class="icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
-      settings:   '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-      grid:       '<svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
-      list:       '<svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
-      carousel:   '<svg class="icon" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="12" rx="2"/><path d="M22 8v4"/><path d="M2 8v4"/><circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><line x1="9" y1="10" x2="15" y2="10"/></svg>',
-      'chevron-left': '<svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>',
-      x:          '<svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-      star:       '<svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-      'star-filled': '<svg class="icon" viewBox="0 0 24 24" style="fill:currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-      upload:     '<svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
-      search:     '<svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-      'skip-back': '<svg class="icon" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>',
-      'skip-forward': '<svg class="icon" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>',
-      'more-horizontal': '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
-      clock:      '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-    };
-    function icon(name) { return ICONS[name] || ''; }
-
     const state = {
       books: [],
       filter: 'all',
-      libraryView: 'carousel',
       currentBookId: null,
       bookChatLastAnswer: '',
       bookChatLastQuestion: '',
@@ -2565,12 +2063,15 @@
     }
 
     function setPlayerSessionMeta(b) {
+      const chs = chapterList(b.run);
+      const ch = chs.find(c => c.index === b.listen_chapter_index);
+      const chTitle = ch && ch.title ? ch.title : null;
       state.playerSession = {
         id: b.id,
         title: b.title || 'Untitled',
         author: b.author || 'Unknown author',
         cover_url: b.cover_url || null,
-        listen_hint: listenProgressLabel(b) || '',
+        listen_hint: b.listen_progress_hint || (chTitle ? ('Ch. ' + b.listen_chapter_index + ' · ' + chTitle) : ''),
       };
       updatePlayerMetaUI();
     }
@@ -2647,13 +2148,13 @@
 
     function syncPlayFabIcons() {
       const v = $('hlsVideo');
-      let iconName = 'play';
+      let sym = '▶';
       if (v && !v.paused && !v.ended) {
-        iconName = (v.readyState < 3) ? 'more-horizontal' : 'pause';
+        sym = (v.readyState < 3) ? '…' : '❚❚';
       }
       ['miniPlayBtn', 'readerDockPlay', 'sheetPlayBtn'].forEach((id) => {
         const el = $(id);
-        if (el) el.innerHTML = ICONS[iconName];
+        if (el) el.textContent = sym;
       });
     }
 
@@ -2736,7 +2237,6 @@
         patch.listen_abs_time_s = absAtStart != null && !isNaN(absAtStart) ? absAtStart : null;
         patch.listen_transport = isRunning ? 'hls' : 'chapter';
       }
-      patch.listen_progress_hint = makeListenProgressHint(run, ch.index, patch.listen_transport === 'book' ? patch.listen_abs_time_s : 0);
       await patchBook(bookId, patch);
       await openBookDetail(bookId, { activatePlayback: true });
       playVideoWhenReady($('hlsVideo'));
@@ -3063,9 +2563,9 @@
     function generationSnapshot(b) {
       const cur = b.generation_current || {};
       const chapter = cur.chapter_title || (cur.chapter_index != null ? ('Chapter ' + cur.chapter_index) : 'Waiting for chapter details');
-      const chapterProgress = (cur.chunk_index != null && cur.chunk_total)
-        ? Math.max(0, Math.min(100, Math.round((Number(cur.chunk_index) / Number(cur.chunk_total)) * 100))) + '%'
-        : '—';
+      const chunk = (cur.chunk_index != null && cur.chunk_total != null)
+        ? `${cur.chunk_index} of ${cur.chunk_total}`
+        : (cur.chunk_index != null ? String(cur.chunk_index) : '—');
       const pos = formatGenCurrent(cur) || 'No detailed pipeline position yet';
       const last = b.generation_last_event || 'No event recorded yet';
       const updated = b.generation_updated_at ? isoAgo(b.generation_updated_at) : 'No timestamp yet';
@@ -3073,12 +2573,12 @@
       if (st === 'running') {
         return {
           kicker: 'Generating audio',
-          headline: chapterProgress !== '—'
-            ? `Generating ${chapterProgress} of this chapter`
+          headline: cur.chunk_index != null && cur.chunk_total != null
+            ? `Working on chunk ${cur.chunk_index} of ${cur.chunk_total}`
             : 'Audiobook generation is in progress',
           copy: 'A live process is running right now. This card only shows generating when the pipeline is actually active.',
           note: 'Safe controls: Stop generation pauses work without deleting the book. Delete stays separate.',
-          chapter, chapterProgress, last, updated,
+          chapter, chunk, last, updated,
         };
       }
       if (st === 'starting') {
@@ -3087,7 +2587,7 @@
           headline: 'Getting the audiobook job ready',
           copy: 'The app has accepted the request and is preparing files before active speech generation begins.',
           note: 'If this stays here too long without updates, it should flip to stalled instead of pretending to run.',
-          chapter, chapterProgress, last, updated,
+          chapter, chunk, last, updated,
         };
       }
       if (st === 'ready') {
@@ -3096,7 +2596,7 @@
           headline: 'Finished generating audio',
           copy: 'The run completed successfully and playable audio is available for this book.',
           note: 'You can play the audiobook now or restart later if you want to regenerate it.',
-          chapter, chapterProgress, last, updated,
+          chapter, chunk, last, updated,
         };
       }
       if (st === 'error') {
@@ -3105,7 +2605,7 @@
           headline: 'This run hit an error',
           copy: 'The last attempt stopped because of a pipeline error. Review diagnostics or restart after changes.',
           note: 'Errors should be explicit so you do not have to guess whether work is still happening.',
-          chapter, chapterProgress, last, updated,
+          chapter, chunk, last, updated,
         };
       }
       if (st === 'stalled') {
@@ -3114,7 +2614,7 @@
           headline: 'Generation appears stalled',
           copy: 'No live process is running and this run has been quiet long enough that it likely exited before finishing.',
           note: 'Use Restart audiobook to begin again from the saved run folder.',
-          chapter, chapterProgress, last, updated,
+          chapter, chunk, last, updated,
         };
       }
       if (st === 'paused') {
@@ -3123,7 +2623,7 @@
           headline: 'Generation is paused',
           copy: 'The pipeline process is frozen in place. You can resume it at any time to continue from exactly where it left off.',
           note: 'While paused, you can start or resume another book\'s generation. Only one book should actively generate at a time for best performance.',
-          chapter, chapterProgress, last, updated,
+          chapter, chunk, last, updated,
         };
       }
       if (st === 'stopped') {
@@ -3132,7 +2632,7 @@
           headline: 'Generation is not running',
           copy: 'No live process is active for this book right now. Nothing is working in the background.',
           note: 'You can restart when you are ready. This state is separate from delete, so your book stays in the library.',
-          chapter, chapterProgress, last, updated,
+          chapter, chunk, last, updated,
         };
       }
       return {
@@ -3954,6 +3454,7 @@
     }
 
     function renderLibrary() {
+      const root = $('libraryCards');
       const empty = $('libraryEmpty');
       let items = applyFilter(state.books);
       const q = (state.libraryQuery || '').trim().toLowerCase();
@@ -3974,139 +3475,15 @@
           if (!pa && !pb) return 0;
           return (Date.parse(pb)||0) - (Date.parse(pa)||0);
         });
-      } else {
+      } else { // recent
         items.sort((a,b) => (Date.parse(b.added_at||b.created_at||0)||0) - (Date.parse(a.added_at||a.created_at||0)||0));
       }
-
+      root.innerHTML = '';
       if (!items.length) {
         empty.classList.remove('hidden');
-        $('carouselView').classList.add('hidden');
-        $('gridView').classList.add('hidden');
-        $('listView').classList.add('hidden');
-        $('heroBanner').classList.add('hidden');
         return;
       }
       empty.classList.add('hidden');
-
-      // Hero banner: first active or most recent book
-      renderHero(items);
-
-      const view = state.libraryView || 'carousel';
-      $('carouselView').classList.toggle('hidden', view !== 'carousel');
-      $('gridView').classList.toggle('hidden', view !== 'grid');
-      $('listView').classList.toggle('hidden', view !== 'list');
-
-      if (view === 'carousel') renderCarouselView(items);
-      else if (view === 'grid') renderGridView(items);
-      else if (view === 'list') renderListView(items);
-    }
-
-    function renderHero(items) {
-      const hero = $('heroBanner');
-      // Pick active book or first book
-      let featured = items.find(b => ['starting','running','stalled'].includes(b.conversion_status))
-                  || items.find(b => b.listen_updated_at)
-                  || items[0];
-      if (!featured) { hero.classList.add('hidden'); return; }
-      hero.classList.remove('hidden');
-      hero.onclick = () => navigate({ name: 'book', id: featured.id });
-      const img = featured.cover_url || '';
-      const title = escapeHtml(featured.title);
-      const author = escapeHtml(featured.author || '');
-      const status = fmtStatus(featured.conversion_status);
-      hero.innerHTML = (img ? `<img src="${img}" alt="">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg, var(--accent2), var(--surface2));display:flex;align-items:center;justify-content:center;font-size:4rem">📖</div>`)
-        + `<div class="hero-gradient"></div>`
-        + `<div class="hero-content"><span class="hero-pill">${status}</span><h2>${title}</h2><div class="hero-author">${author}</div></div>`;
-    }
-
-    function makeCarouselCard(b) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'carousel-card';
-      btn.addEventListener('click', () => navigate({ name: 'book', id: b.id }));
-      const wrap = document.createElement('div');
-      wrap.className = 'carousel-cover-wrap';
-      if (b.cover_url) {
-        wrap.innerHTML = `<img src="${escapeHtml(b.cover_url)}" alt="" loading="lazy">`;
-      } else {
-        wrap.innerHTML = `<div class="carousel-cover-placeholder">📖</div>`;
-      }
-      const overlay = document.createElement('div');
-      overlay.className = 'carousel-cover-overlay';
-      overlay.innerHTML = `<span class="pill ${pillClass(b.conversion_status)}">${fmtStatus(b.conversion_status)}</span>`;
-      wrap.appendChild(overlay);
-      btn.appendChild(wrap);
-      const title = document.createElement('div');
-      title.className = 'carousel-card-title';
-      title.textContent = b.title || 'Untitled';
-      btn.appendChild(title);
-      const author = document.createElement('div');
-      author.className = 'carousel-card-author';
-      author.textContent = b.author || 'Unknown author';
-      btn.appendChild(author);
-      // Progress bar
-      const pct = listenPercent(b);
-      if (pct > 0 && pct <= 100) {
-        const bar = document.createElement('div');
-        bar.className = 'carousel-card-progress';
-        bar.innerHTML = `<span style="width:${pct}%"></span>`;
-        btn.appendChild(bar);
-      }
-      return btn;
-    }
-
-    function renderCarouselView(items) {
-      // Continue row: books with progress
-      const contItems = items.filter(b => listenPercent(b) > 0 || b.listen_updated_at || b.read_updated_at);
-      // Sort by most recently listened
-      contItems.sort((a,b) => (Date.parse(b.listen_updated_at||b.read_updated_at||0)||0) - (Date.parse(a.listen_updated_at||a.read_updated_at||0)||0));
-      const contSection = $('carouselContinue');
-      if (contItems.length > 0) {
-        contSection.classList.remove('hidden');
-        const row = $('carouselContinueRow');
-        row.innerHTML = '';
-        contItems.forEach(b => row.appendChild(makeCarouselCard(b)));
-      } else {
-        contSection.classList.add('hidden');
-      }
-      // All books
-      $('carouselAllRow').innerHTML = '';
-      items.forEach(b => $('carouselAllRow').appendChild(makeCarouselCard(b)));
-      // Favorites
-      const favItems = items.filter(b => b.favorite);
-      const favSection = $('carouselFavorites');
-      if (favItems.length > 0) {
-        favSection.classList.remove('hidden');
-        $('carouselFavRow').innerHTML = '';
-        favItems.forEach(b => $('carouselFavRow').appendChild(makeCarouselCard(b)));
-      } else {
-        favSection.classList.add('hidden');
-      }
-    }
-
-    function renderGridView(items) {
-      const root = $('gridView');
-      root.innerHTML = '';
-      for (const b of items) {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = 'grid-card';
-        card.addEventListener('click', () => navigate({ name: 'book', id: b.id }));
-        if (b.cover_url) {
-          card.innerHTML = `<img class="grid-card-cover" src="${escapeHtml(b.cover_url)}" alt="" loading="lazy">`;
-        } else {
-          card.innerHTML = `<div class="grid-card-cover placeholder">📖</div>`;
-        }
-        card.innerHTML += `<div class="grid-card-title">${escapeHtml(b.title)}</div>`
-          + `<div class="grid-card-author">${escapeHtml(b.author || '')}</div>`
-          + `<span class="grid-card-pill ${pillClass(b.conversion_status)}">${fmtStatus(b.conversion_status)}</span>`;
-        root.appendChild(card);
-      }
-    }
-
-    function renderListView(items) {
-      const root = $('libraryCards');
-      root.innerHTML = '';
       for (const b of items) {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -4133,7 +3510,7 @@
         const star = document.createElement('button');
         star.type = 'button';
         star.className = 'star' + (b.favorite ? ' on' : '');
-        star.innerHTML = ICONS[b.favorite ? 'star-filled' : 'star'];
+        star.textContent = b.favorite ? '★' : '☆';
         star.addEventListener('click', async (ev) => {
           ev.stopPropagation();
           await toggleFavorite(b, !b.favorite);
@@ -4144,15 +3521,6 @@
         btn.appendChild(body);
         root.appendChild(btn);
       }
-    }
-
-    function listenPercent(book) {
-      if (book.listen_progress_pct != null) return Number(book.listen_progress_pct);
-      if (book.listen_progress_hint) {
-        const m = String(book.listen_progress_hint).match(/(\d+)\s*%/);
-        if (m) return Number(m[1]);
-      }
-      return 0;
     }
 
     function escapeHtml(s) {
@@ -4213,29 +3581,6 @@
 
     function chapterList(run) {
       return (run && run.chapters) || [];
-    }
-
-    /** Strip split_NNN / chunk_NNN patterns from chapter titles for display. */
-    function cleanChapterTitle(title) {
-      if (!title) return '';
-      const s = String(title);
-      // If it's a split/chunk title, extract the part number
-      const m = s.match(/[_-]?(split|chunk)[_-]?(\d+)$/i);
-      if (m) {
-        const num = parseInt(m[2], 10);
-        // Strip the split suffix and clean up
-        let base = s.replace(m[0], '').replace(/[_-]+$/g, '').replace(/_/g, ' ').trim();
-        if (base && base.length > 0) return base + ' (part ' + (num + 1) + ')';
-        return 'Part ' + (num + 1);
-      }
-      // Clean up underscores in non-split titles too
-      return s.replace(/_/g, ' ');
-    }
-
-    /** True when a chapter title is a split/chunk identifier (not a real chapter name). */
-    function isSplitTitle(title) {
-      if (!title) return false;
-      return /[_-]?(split|chunk)[_-]?\d/i.test(String(title));
     }
 
     const LISTEN_TIMELINE_VERSION = 1;
@@ -4330,37 +3675,9 @@
       return null;
     }
 
-    function makeListenProgressHint(run, chapterIndex, timeS) {
-      const parts = [];
-      const chs = chapterTimeline(run);
-      const ch = chs.find((c) => c.index === chapterIndex) || (Number.isInteger(chapterIndex) ? chs[chapterIndex] : null);
-      if (chapterIndex != null) parts.push('Ch. ' + chapterIndex);
-      const title = ch && ch.title ? cleanChapterTitle(String(ch.title)) : '';
-      if (title) parts.push(title);
-      const t = Number(timeS);
-      if (Number.isFinite(t)) parts.push(fmtClock(Math.max(0, t)));
-      return parts.length ? parts.join(' · ') : null;
-    }
-
     function listenProgressLabel(b) {
-      if (!b) return null;
-      const run = b.run;
-      const tvOk = b.listen_timeline_version == null || b.listen_timeline_version === LISTEN_TIMELINE_VERSION;
-      if (run && b.listen_chapter_index != null) {
-        let t = null;
-        if (tvOk && b.listen_transport === 'book' && b.listen_abs_time_s != null && !isNaN(b.listen_abs_time_s)) {
-          t = b.listen_abs_time_s;
-        } else if (b.listen_chapter_time_s != null && !isNaN(b.listen_chapter_time_s)) {
-          t = b.listen_chapter_time_s;
-        } else if (b.listen_time_s != null && !isNaN(b.listen_time_s)) {
-          t = b.listen_time_s;
-        } else if (tvOk && b.listen_abs_time_s != null && !isNaN(b.listen_abs_time_s)) {
-          t = b.listen_abs_time_s;
-        }
-        const derived = makeListenProgressHint(run, b.listen_chapter_index, t);
-        if (derived) return derived;
-      }
       if (b.listen_progress_hint) return b.listen_progress_hint;
+      const tvOk = b.listen_timeline_version == null || b.listen_timeline_version === LISTEN_TIMELINE_VERSION;
       if (tvOk && b.listen_abs_time_s != null && !isNaN(b.listen_abs_time_s)) return 'At ' + fmtClock(b.listen_abs_time_s);
       if (b.listen_time_s != null && !isNaN(b.listen_time_s)) return 'At ' + fmtClock(b.listen_time_s);
       return null;
@@ -4429,7 +3746,6 @@
           patch.listen_abs_time_s = absStart != null ? absStart : null;
           patch.listen_transport = nextCh.status === 'running' ? 'hls' : 'chapter';
         }
-        patch.listen_progress_hint = makeListenProgressHint(run, nextCh.index, patch.listen_transport === 'book' ? patch.listen_abs_time_s : 0);
         await patchBook(bookId, patch);
         await openBookDetail(bookId, { activatePlayback: true });
         playVideoWhenReady($('hlsVideo'));
@@ -4462,7 +3778,6 @@
               patch2.listen_abs_time_s = abs0 != null ? abs0 : null;
               patch2.listen_transport = freshNext.status === 'running' ? 'hls' : 'chapter';
             }
-            patch2.listen_progress_hint = makeListenProgressHint(freshRun, freshNext.index, patch2.listen_transport === 'book' ? patch2.listen_abs_time_s : 0);
             await patchBook(bookId, patch2);
             await openBookDetail(bookId, { activatePlayback: true });
             playVideoWhenReady($('hlsVideo'));
@@ -4543,7 +3858,15 @@
           chLocal = ct;
           chIdx = state.activeListenChapter;
         }
-        const hint = makeListenProgressHint(run, chIdx, transport === 'book' && abs != null && !isNaN(abs) ? abs : chLocal) || '';
+        const chs = chapterTimeline(run);
+        const chMeta = chs.find((c) => c.index === chIdx) || chs[0];
+        const title = chMeta && chMeta.title ? String(chMeta.title) : '';
+        const hintParts = [];
+        if (chIdx != null) hintParts.push('Ch. ' + chIdx);
+        if (title) hintParts.push(title);
+        const clock = transport === 'book' && abs != null && !isNaN(abs) ? fmtClock(abs) : fmtClock(chLocal);
+        hintParts.push(clock);
+        const hint = hintParts.join(' · ');
         const patch = {
           listen_time_s: chLocal,
           listen_chapter_index: chIdx,
@@ -4638,16 +3961,14 @@
             }
             const m = mediaForChapter(r, chI, 'final');
             const chT = bm.chapter_time_s != null && !isNaN(bm.chapter_time_s) ? bm.chapter_time_s : bm.time_s;
-            const jumpTransport = m.transport || 'chapter';
             await patchBook(bookId, {
               listen_chapter_index: chI,
               listen_abs_time_s: abs,
               listen_chapter_time_s: chT != null ? chT : 0,
               listen_time_s: chT != null ? chT : 0,
-              listen_transport: jumpTransport,
+              listen_transport: m.transport || 'chapter',
               listen_src: m.srcKind,
               listen_timeline_version: LISTEN_TIMELINE_VERSION,
-              listen_progress_hint: makeListenProgressHint(r, chI, jumpTransport === 'book' ? abs : (chT != null ? chT : 0)),
             });
             await openBookDetail(bookId, { activatePlayback: true });
             playVideoWhenReady($('hlsVideo'));
@@ -4704,85 +4025,46 @@
         if (summary) summary.textContent = 'No chapters yet';
         return;
       }
-
-      // Always auto-expand so chapters are visible
-      const section = document.getElementById('chapterListSection');
-      if (section) section.open = true;
-
-      // Show helper note + legend
-      const note = document.getElementById('chapterSelectorNote');
-      if (note) note.style.display = '';
-      const legend = document.querySelector('.chapter-selector-legend');
-      if (legend) legend.style.display = '';
-
       const list = document.createElement('div');
       list.className = 'toc-list';
       const activeIndex = b.listen_chapter_index;
       const activeChapter = chs.find(ch => ch.index === activeIndex) || chs[0];
-
-      // Summary: count completed / total
-      const completedCount = chs.filter(ch => ch.status === 'completed' || ch.hls_url || ch.audio_m4a_url || ch.audio_url).length;
-      // Keep chapter selector summary based on completed/total chapters; older one-based-index tests look for:
-      // summary.textContent = 'Ch. ' + (activeChapter ? activeChapter.index : '—')
       if (summary) {
-        summary.textContent = completedCount + ' of ' + chs.length + ' chapters · ' + Math.round((completedCount / chs.length) * 100) + '%';
+        const label = activeChapter && activeChapter.title ? activeChapter.title : ('Chapter ' + (activeChapter ? activeChapter.index : '—'));
+        let stage = 'Waiting';
+        if (activeChapter) {
+          if (activeChapter.status === 'running') stage = 'Generating';
+          else if (activeChapter.status === 'completed' || activeChapter.hls_url || activeChapter.audio_m4a_url || activeChapter.audio_url) stage = 'Ready';
+        }
+        summary.textContent = 'Ch. ' + (activeChapter ? activeChapter.index : '—') + ' · ' + label + ' · ' + stage;
       }
-
-      // Resume notice
-      if (run.resumed_from_chapter != null) {
-        const notice = document.createElement('div');
-        notice.style.cssText = 'margin:8px 0 12px;padding:10px 14px;border-radius:10px;background:var(--chip-bg);border:1px solid var(--border);font-size:0.82rem';
-        const preCount = (run.previously_completed_chapters || []).length;
-        notice.innerHTML = `⏭️ Resumed — <strong>${preCount}</strong> chapter${preCount !== 1 ? 's' : ''} already complete, starting from chapter <strong>${run.resumed_from_chapter}</strong>`;
-        container.parentNode.insertBefore(notice, container);
-      }
-
       for (const ch of chs) {
-        const row = document.createElement('div');
-        row.setAttribute('role', 'button');
-        row.tabIndex = 0;
+        const row = document.createElement('button');
+        row.type = 'button';
         row.className = 'toc-row';
         const isRunning = ch.status === 'running';
         const isCompleted = ch.status === 'completed';
         const hasMedia = !!(ch.hls_url || ch.audio_m4a_url || ch.audio_url);
-
         if (isRunning) {
           row.classList.add('generating');
         } else if (isCompleted || hasMedia) {
           row.classList.add('completed');
         } else {
           row.classList.add('locked');
-          row.setAttribute('aria-disabled', 'true');
+          row.disabled = true;
         }
         if (ch.index === activeIndex) {
           row.classList.add('active');
         }
-
         const num = document.createElement('span');
         num.className = 'toc-num';
         num.textContent = ch.index;
-
         const title = document.createElement('span');
         title.className = 'toc-title';
-        const chapterDisplayTitle = ch.title || ('Chapter ' + ch.index);
-        title.textContent = cleanChapterTitle(chapterDisplayTitle) || chapterDisplayTitle;
-
+        title.textContent = ch.title || ('Chapter ' + ch.index);
         const status = document.createElement('span');
         status.className = 'toc-status';
-
-        // ── Mini progress bar for in-progress chapters ──
-        const totalChunks = ch.total_chunks || 0;
-        const ttsDone = ch.tts_completed_chunks || 0;
-        if (isRunning && totalChunks > 0) {
-          const chunkPct = Math.round((ttsDone / totalChunks) * 100);
-          const miniBar = document.createElement('span');
-          miniBar.style.cssText = 'display:inline-block;width:40px;height:6px;border-radius:999px;background:var(--surface);overflow:hidden;vertical-align:middle;margin-right:6px;flex-shrink:0';
-          const miniFill = document.createElement('span');
-          miniFill.style.cssText = `display:block;height:100%;width:${chunkPct}%;background:var(--mint);border-radius:999px;transition:width 0.5s ease`;
-          miniBar.appendChild(miniFill);
-          status.appendChild(miniBar);
-          status.appendChild(document.createTextNode(' ' + chunkPct + '%'));
-        } else if (isRunning) {
+        if (isRunning) {
           const pulse = document.createElement('span');
           pulse.className = 'pulse';
           status.appendChild(pulse);
@@ -4792,32 +4074,10 @@
         } else {
           status.textContent = 'Waiting';
         }
-
         row.appendChild(num);
         row.appendChild(title);
         row.appendChild(status);
-
-        // ── Save offline button for completed chapters with audio ──
-        if ((isCompleted || hasMedia) && (ch.audio_m4a_url || ch.audio_url)) {
-          const saveBtn = document.createElement('button');
-          saveBtn.type = 'button';
-          saveBtn.className = 'btn-offline-save';
-          const mediaUrl = ch.audio_m4a_url || ch.audio_url;
-          saveBtn.dataset.offlineUrl = mediaUrl;
-          saveBtn.textContent = '💾 Save offline';
-          saveBtn.title = 'Save chapter for offline playback';
-          saveBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (saveBtn.textContent.includes('Saved')) {
-              removeChapterOffline(mediaUrl, saveBtn);
-            } else {
-              saveChapterOffline(mediaUrl, saveBtn);
-            }
-          });
-          row.appendChild(saveBtn);
-        }
-
-        if (row.getAttribute('aria-disabled') !== 'true') {
+        if (!row.disabled) {
           row.addEventListener('click', async () => {
             const vid = $('hlsVideo');
             const runFinalTap = run && run.downloads && run.downloads.final_audio;
@@ -4845,60 +4105,15 @@
               patch.listen_abs_time_s = absAtStart != null && !isNaN(absAtStart) ? absAtStart : null;
               patch.listen_transport = isRunning ? 'hls' : 'chapter';
             }
-            patch.listen_progress_hint = makeListenProgressHint(run, ch.index, patch.listen_transport === 'book' ? patch.listen_abs_time_s : 0);
             await patchBook(b.id, patch);
             await openBookDetail(b.id, { activatePlayback: true });
             playVideoWhenReady($('hlsVideo'));
           });
-          row.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); row.click(); }
-          });
         }
-
         list.appendChild(row);
       }
-
-      // Bottom: download full audiobook if all chapters complete
-      const runFinal = run && run.downloads && run.downloads.final_audio;
-      if (completedCount === chs.length && runFinal) {
-        const finalRow = document.createElement('div');
-        finalRow.style.cssText = 'padding:10px 0;border-top:1px solid var(--border);margin-top:8px';
-        const dlBtn = document.createElement('button');
-        dlBtn.type = 'button';
-        dlBtn.className = 'btn-primary';
-        dlBtn.style.cssText = 'width:100%;font:inherit;font-size:0.86rem;margin-bottom:6px';
-        dlBtn.textContent = '⬇ Download full audiobook (.m4b)';
-        dlBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const a = document.createElement('a');
-          a.href = runFinal;
-          a.download = (b.title || 'audiobook') + '.m4b';
-          a.click();
-        });
-        finalRow.appendChild(dlBtn);
-
-        const saveBtn = document.createElement('button');
-        saveBtn.type = 'button';
-        saveBtn.className = 'btn-offline-save';
-        saveBtn.style.cssText = 'width:100%';
-        saveBtn.dataset.offlineUrl = runFinal;
-        saveBtn.textContent = '💾 Save offline';
-        saveBtn.title = 'Save full audiobook for offline playback';
-        saveBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (saveBtn.textContent.includes('Saved')) {
-            removeChapterOffline(runFinal, saveBtn);
-          } else {
-            saveChapterOffline(runFinal, saveBtn);
-          }
-        });
-        finalRow.appendChild(saveBtn);
-        list.appendChild(finalRow);
-      }
-
       container.innerHTML = '';
       container.appendChild(list);
-      setTimeout(() => { refreshAllChapterButtons(); requestCacheStats(); }, 200);
     }
 
     function formatGenCurrent(cur) {
@@ -4906,10 +4121,9 @@
       const parts = [];
       if (cur.chapter_title != null && String(cur.chapter_title).trim()) parts.push(String(cur.chapter_title).trim());
       else if (cur.chapter_index != null) parts.push('Chapter ' + cur.chapter_index);
-      if (cur.chunk_index != null && cur.chunk_total) {
-        const pct = Math.max(0, Math.min(100, Math.round((Number(cur.chunk_index) / Number(cur.chunk_total)) * 100)));
-        parts.push(pct + '% of chapter');
-      }
+      if (cur.chunk_index != null && cur.chunk_total != null) {
+        parts.push('chunk ' + cur.chunk_index + ' / ' + cur.chunk_total);
+      } else if (cur.chunk_index != null) parts.push('chunk ' + cur.chunk_index);
       if (cur.phase) parts.push(String(cur.phase));
       return parts.join(' · ');
     }
@@ -4928,7 +4142,7 @@
           <p class="status-copy">${escapeHtml(snap.copy)}</p>
           <div class="status-grid">
             <div class="status-stat"><div class="k">Current chapter</div><div class="v">${escapeHtml(snap.chapter)}</div></div>
-            <div class="status-stat"><div class="k">Chapter progress</div><div class="v">${escapeHtml(snap.chapterProgress)}</div></div>
+            <div class="status-stat"><div class="k">Current chunk</div><div class="v">${escapeHtml(snap.chunk)}</div></div>
             <div class="status-stat"><div class="k">Last update</div><div class="v">${escapeHtml(snap.updated)}</div></div>
             <div class="status-stat"><div class="k">Last event</div><div class="v">${escapeHtml(snap.last)}</div></div>
           </div>
@@ -4965,8 +4179,7 @@
       }
       card.classList.remove('hidden');
       const parts = [];
-      const listenHint = listenProgressLabel(b);
-      if (canListen) parts.push(listenHint || 'Ready to listen');
+      if (canListen) parts.push(b.listen_progress_hint || 'Ready to listen');
       if (hasRead) parts.push(b.read_progress_hint || 'Saved reading position');
       $('continueSummary').textContent = parts.join(' · ');
       $('btnContinueListen').classList.toggle('hidden', !canListen);
@@ -5098,24 +4311,6 @@
         await openBookDetail(id);
         await loadLibrary();
       };
-
-      // EPUB save button
-      const epubPath = b.epub_rel_path;
-      if (epubPath) {
-        const epubUrl = '/media?path=' + encodeURIComponent(epubPath);
-        $('btnSaveEpub').classList.remove('hidden');
-        $('btnSaveEpub').onclick = async () => {
-          const btn = $('btnSaveEpub');
-          if (btn.textContent.includes('Saved')) {
-            await removeEpubOffline(epubUrl);
-          } else {
-            await saveEpubOffline(epubUrl);
-          }
-        };
-        refreshEpubButton(epubUrl);
-      } else {
-        $('btnSaveEpub').classList.add('hidden');
-      }
 
       $('btnDeleteBook').onclick = async () => {
         const msg = b.generation_is_live
@@ -5503,71 +4698,9 @@
     async function loadSettingsForm() {
       const data = await fetchJson('/api/settings');
       const s = data.settings || {};
-      await populateVoiceDropdown(s.kokoro_voice || 'af_heart');
+      $('setVoice').value = s.kokoro_voice || '';
       $('setRetention').value = s.output_retention || 'keep_all';
       applyAppTheme(localStorage.getItem('appTheme') || 'dark');
-    }
-
-    async function populateVoiceDropdown(currentVoice) {
-      const sel = $('setVoice');
-      try {
-        const data = await fetchJson('/api/voices');
-        const voices = data.voices || [];
-        sel.innerHTML = '';
-        if (!voices.length) {
-          sel.innerHTML = '<option value="">No voices found</option>';
-          return;
-        }
-        // Group by language
-        const groups = {};
-        voices.forEach(v => {
-          const lang = v.language || 'Other';
-          if (!groups[lang]) groups[lang] = [];
-          groups[lang].push(v);
-        });
-        for (const [lang, groupVoices] of Object.entries(groups)) {
-          const optgroup = document.createElement('optgroup');
-          optgroup.label = lang;
-          groupVoices.forEach(v => {
-            const opt = document.createElement('option');
-            opt.value = v.id;
-            opt.textContent = v.label || v.id;
-            if (v.id === currentVoice) opt.selected = true;
-            optgroup.appendChild(opt);
-          });
-          sel.appendChild(optgroup);
-        }
-        // Enable sample button
-        const btn = $('btnVoiceSample');
-        btn.disabled = !sel.value;
-        btn.onclick = () => playVoiceSample(sel.value);
-        sel.addEventListener('change', () => {
-          btn.disabled = !sel.value;
-          $('voiceSampleStatus').textContent = '';
-        });
-      } catch (e) {
-        sel.innerHTML = `<option value="${currentVoice}">${currentVoice}</option>`;
-      }
-    }
-
-    async function playVoiceSample(voice) {
-      const btn = $('btnVoiceSample');
-      const status = $('voiceSampleStatus');
-      const audio = $('voiceSampleAudio');
-      btn.disabled = true;
-      status.textContent = 'Generating…';
-      try {
-        audio.src = '/api/voices/sample?voice=' + encodeURIComponent(voice);
-        audio.load();
-        await audio.play();
-        status.textContent = '▶ Playing';
-        audio.onended = () => { status.textContent = '✓ Done'; btn.disabled = false; };
-        audio.onerror = () => { status.textContent = '✗ Playback error'; btn.disabled = false; };
-        btn.disabled = false;
-      } catch (e) {
-        status.textContent = '✗ ' + (e.message || 'Error');
-        btn.disabled = false;
-      }
     }
 
     $('settingsForm').addEventListener('submit', async (ev) => {
@@ -5599,44 +4732,6 @@
     $('setThemeLight').addEventListener('click', () => applyAppTheme('light'));
     applyAppTheme(localStorage.getItem('appTheme') || 'dark');
     initPlayerChrome();
-
-    // Inject SVG icons into elements with data-icon
-    (function initIcons() {
-      document.querySelectorAll('[data-icon]').forEach(el => {
-        const name = el.getAttribute('data-icon');
-        if (ICONS[name]) {
-          el.insertAdjacentHTML('afterbegin', ICONS[name]);
-          el.removeAttribute('data-icon');
-        }
-      });
-      // Update play/pause button with SVG
-      const updatePlayFab = () => {
-        const fab = document.querySelector('#miniPlayFab, #readerDockPlay');
-        if (fab && !fab.querySelector('.icon')) {
-          fab.innerHTML = '';
-          fab.insertAdjacentHTML('afterbegin', ICONS['play']);
-        }
-      };
-      updatePlayFab();
-      // Update star buttons
-      document.querySelectorAll('.star').forEach(star => {
-        const isOn = star.classList.contains('on');
-        star.innerHTML = ICONS[isOn ? 'star-filled' : 'star'];
-      });
-    })();
-
-    // View toggle
-    state.libraryView = localStorage.getItem('libraryView') || 'carousel';
-    document.querySelectorAll('#viewToggle button').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.view === state.libraryView);
-      btn.addEventListener('click', () => {
-        state.libraryView = btn.dataset.view;
-        localStorage.setItem('libraryView', state.libraryView);
-        document.querySelectorAll('#viewToggle button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        if (parseRoute().name === 'library') renderLibrary();
-      });
-    });
 
     $('readerBack').addEventListener('click', () => {
       const ctx = state.bookChatReturnContext;
@@ -5688,242 +4783,6 @@
     });
     window.addEventListener('hashchange', routeUI);
     routeUI();
-
-    // ── Service Worker ──────────────────────────────────────────────────
-    let _swReady = null;
-    let _swDebug = [];
-    function _swLog(msg, ok = true) {
-      _swDebug.unshift((ok ? '✓' : '✗') + ' ' + msg);
-      if (_swDebug.length > 5) _swDebug.length = 5;
-      const html = _swDebug.join('<br>');
-      const el = document.getElementById('swDebug');
-      if (el) el.innerHTML = html;
-      const el2 = document.getElementById('swDebugSettings');
-      if (el2) el2.innerHTML = html;
-    }
-    if ('serviceWorker' in navigator) {
-      _swLog('SW supported');
-      const regPromise = navigator.serviceWorker.register('/sw.js?v=7', { scope: '/' });
-      _swReady = regPromise.then(reg => {
-        _swLog('SW registered');
-        if (navigator.serviceWorker.controller) {
-          _swLog('Controller ready');
-          return navigator.serviceWorker.controller;
-        }
-        _swLog('Waiting for controller...');
-        return new Promise(resolve => {
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            _swLog('Controller acquired');
-            resolve(navigator.serviceWorker.controller);
-          }, { once: true });
-          // Fallback: if SW already active but not controlling, wait a bit
-          setTimeout(() => {
-            if (navigator.serviceWorker.controller) {
-              _swLog('Controller (timeout)');
-              resolve(navigator.serviceWorker.controller);
-            }
-          }, 3000);
-        });
-      }).catch(e => {
-        _swLog('SW register failed: ' + e.message, false);
-        return null;
-      });
-      navigator.serviceWorker.addEventListener('message', (ev) => {
-        const d = ev.data;
-        if (d && d.type === 'cache-stats') renderCacheStats(d);
-      });
-    } else {
-      _swLog('SW not supported', false);
-    }
-
-    function swReady() {
-      return _swReady || Promise.reject(new Error('ServiceWorker not supported'));
-    }
-
-    // ── Send a request to the SW and await the response ─────────────────
-    function swRequest(action, payload = {}) {
-      return new Promise((resolve, reject) => {
-        swReady().then(controller => {
-          const channel = new MessageChannel();
-          channel.port1.onmessage = (ev) => {
-            if (ev.data.error) reject(new Error(ev.data.error));
-            else resolve(ev.data);
-          };
-          controller.postMessage({ action, ...payload }, [channel.port2]);
-          setTimeout(() => reject(new Error('SW request timed out')), 120000);
-        }).catch(reject);
-      });
-    }
-
-    // ── Chapter offline save ────────────────────────────────────────────
-    async function saveChapterOffline(mediaUrl, btnEl) {
-      if (!mediaUrl) return;
-      const abs = new URL(mediaUrl, location.origin).href;
-      btnEl.disabled = true;
-      btnEl.textContent = '⏳ Saving…';
-      _swLog('Saving: ' + abs.substring(abs.lastIndexOf('/')+1, abs.lastIndexOf('.')));
-      try {
-        await swRequest('cache-chapter', { url: abs });
-        _swLog('Save OK');
-        btnEl.textContent = '✅ Saved';
-        btnEl.className = 'btn-offline-saved';
-        btnEl.disabled = false;
-        requestCacheStats();
-      } catch (e) {
-        // SW request failed — but it may have cached anyway. Check.
-        _swLog('Waiting for cache…', true);
-        // Poll: check if chapter appeared in cache (SW might still be working)
-        let cached = false;
-        for (let i = 0; i < 15; i++) {
-          await new Promise(r => setTimeout(r, 1000));
-          const set = await getCachedUrlSet();
-          if (set.has(abs)) { cached = true; break; }
-        }
-        if (cached) {
-          _swLog('Save OK (late)');
-          btnEl.textContent = '✅ Saved';
-          btnEl.className = 'btn-offline-saved';
-        } else {
-          _swLog('Save failed after retries', false);
-          btnEl.textContent = '❌ Failed';
-          btnEl.className = 'btn-offline-save';
-          setTimeout(() => { btnEl.textContent = '💾 Save offline'; }, 3000);
-        }
-        btnEl.disabled = false;
-        requestCacheStats();
-      }
-    }
-
-    async function removeChapterOffline(mediaUrl, btnEl) {
-      if (!mediaUrl) return;
-      const abs = new URL(mediaUrl, location.origin).href;
-      btnEl.disabled = true;
-      btnEl.textContent = '🗑 Removing…';
-      try {
-        await swRequest('uncache-chapter', { url: abs });
-        btnEl.textContent = '💾 Save offline';
-        btnEl.className = 'btn-offline-save';
-        btnEl.disabled = false;
-        requestCacheStats();
-      } catch (e) {
-        btnEl.textContent = '❌ Failed';
-        btnEl.disabled = false;
-        setTimeout(() => { btnEl.textContent = '💾 Save offline'; }, 2000);
-      }
-    }
-
-    // ── Refresh all chapter button states ────────────────────────────────
-    async function refreshAllChapterButtons() {
-      try {
-        const result = await swRequest('get-cached-chapters');
-        const cached = new Set(result.urls || []);
-        document.querySelectorAll('[data-offline-url]').forEach((btn) => {
-          const url = new URL(btn.dataset.offlineUrl, location.origin).href;
-          if (cached.has(url)) {
-            btn.textContent = '✅ Saved';
-            btn.className = 'btn-offline-saved';
-            btn.disabled = false;
-          } else {
-            btn.textContent = '💾 Save offline';
-            btn.className = 'btn-offline-save';
-            btn.disabled = false;
-          }
-        });
-      } catch (e) {
-        // SW not ready yet — buttons stay in default state
-      }
-    }
-
-    async function getCachedUrlSet() {
-      try {
-        const result = await swRequest('get-cached-chapters');
-        return new Set(result.urls || []);
-      } catch (e) {
-        return new Set();
-      }
-    }
-
-    // ── EPUB offline save ────────────────────────────────────────────────
-    async function saveEpubOffline(epubUrl) {
-      if (!epubUrl) return;
-      const abs = new URL(epubUrl, location.origin).href;
-      const btn = $('btnSaveEpub');
-      btn.disabled = true;
-      btn.textContent = '⏳ Saving EPUB…';
-      try {
-        await swRequest('cache-epub', { url: abs });
-        btn.textContent = '✅ EPUB saved';
-      } catch (e) {
-        // Poll to see if it cached anyway
-        let cached = false;
-        for (let i = 0; i < 10; i++) {
-          await new Promise(r => setTimeout(r, 1000));
-          try {
-            const result = await swRequest('get-cached-epubs');
-            if (new Set(result.urls || []).has(abs)) { cached = true; break; }
-          } catch (_) {}
-        }
-        if (cached) {
-          btn.textContent = '✅ EPUB saved';
-        } else {
-          btn.textContent = '❌ Failed — retry';
-          setTimeout(() => { btn.textContent = '💾 Save EPUB offline'; }, 3000);
-        }
-      }
-      btn.disabled = false;
-    }
-
-    async function removeEpubOffline(epubUrl) {
-      if (!epubUrl) return;
-      const abs = new URL(epubUrl, location.origin).href;
-      const btn = $('btnSaveEpub');
-      btn.disabled = true;
-      btn.textContent = '🗑 Removing EPUB…';
-      try {
-        await swRequest('uncache-epub', { url: abs });
-        btn.textContent = '💾 Save EPUB offline';
-      } catch (e) {
-        btn.textContent = '❌ Failed — retry';
-        setTimeout(() => { btn.textContent = '💾 Save EPUB offline'; }, 2000);
-      }
-      btn.disabled = false;
-    }
-
-    async function refreshEpubButton(epubUrl) {
-      if (!epubUrl) return;
-      const abs = new URL(epubUrl, location.origin).href;
-      try {
-        const result = await swRequest('get-cached-epubs');
-        const cached = new Set(result.urls || []);
-        const btn = $('btnSaveEpub');
-        if (cached.has(abs)) {
-          btn.textContent = '✅ EPUB saved';
-        } else {
-          btn.textContent = '💾 Save EPUB offline';
-        }
-        btn.disabled = false;
-      } catch (_) {}
-    }
-
-    // ── Cache stats ─────────────────────────────────────────────────────
-    function requestCacheStats() {
-      swReady().then(controller => {
-        controller.postMessage({ action: 'get-stats' });
-      }).catch(() => {});
-    }
-
-    function renderCacheStats(stats) {
-      let el = document.getElementById('cacheStats');
-      if (!el) return;
-      const chapterBytes = (stats && stats[CACHE_CHAPTERS_NAME] && stats[CACHE_CHAPTERS_NAME].bytes) || 0;
-      const chapterCount = (stats && stats[CACHE_CHAPTERS_NAME] && stats[CACHE_CHAPTERS_NAME].count) || 0;
-      const mb = (chapterBytes / (1024 * 1024)).toFixed(1);
-      el.innerHTML = chapterCount > 0
-        ? `<span style="color:var(--accent)">📱 ${chapterCount} chapter${chapterCount !== 1 ? 's' : ''} · ${mb} MB offline</span>`
-        : '<span class="muted">📱 No chapters saved offline</span>';
-    }
-
-    const CACHE_CHAPTERS_NAME = 'audiobooks-chapters-v2';
   </script>
 </body>
 </html>
